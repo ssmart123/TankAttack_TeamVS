@@ -77,6 +77,10 @@ public class Cannon : MonoBehaviour
 
 ##### 이코드를 구현기위해 어저쩌구저쩌구 3줄이상 적지마
 
+
+
+### 어택구동을 위한 코드구현
+
 https://user-images.githubusercontent.com/63942174/158009037-f89d4479-681c-4ad2-ba7c-d7dad37e16a9.mp4
 
 
