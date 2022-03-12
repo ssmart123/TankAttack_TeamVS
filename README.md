@@ -1,5 +1,5 @@
 # TankAttack_TeamVS
-<style ="font size:14pt;">포톤 서버를 사용하는 실시간 팀 대전게임입니다.
+<h1>포톤 서버를 사용하는 실시간 팀 대전게임입니다.</h1>
 
 
 https://user-images.githubusercontent.com/63942174/158009028-db73771c-60b2-451e-92df-ee2eece69623.mp4
