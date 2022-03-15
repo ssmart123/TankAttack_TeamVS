@@ -1,5 +1,5 @@
 # TankAttack_TeamVS
-### <style="color:yellow">포톤 서버를 사용하는 실시간 팀 대전게임입니다.</color>
+### <span style="color : #ffd33d">포톤 서버를 사용하는 실시간 팀 대전게임입니다.</span>
 
 
 ### 어택구동을 위한 코드구현
