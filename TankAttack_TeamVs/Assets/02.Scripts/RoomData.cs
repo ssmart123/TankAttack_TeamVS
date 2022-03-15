@@ -32,12 +32,6 @@ public class RoomData : MonoBehaviour
                 });
     }
 
-    //// Update is called once per frame
-    //void Update()
-    //{
-        
-    //}
-
     //룸 정보를 전달한 후 Text UI 항목에 표시하는 함수
     public void DispRoomData(bool a_IsOpen)
     {
