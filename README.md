@@ -18,13 +18,82 @@ void Awake()
     {
         //포톤 클라우드 서버 접속 여부 확인
         if (!PhotonNetwork.IsConnected)
-            PhotonNetwork.ConnectUsingSettings();  //1. 포톤 클라우드에 접속
+            PhotonNetwork.ConnectUsingSettings();  //포톤 클라우드에 접속
         
         userId.text = GetUserId();  //사용자 이름 설정
 
         //룸 이름을 무작위로 설정
         roomName.text = "Room_" + Random.Range(0, 999).ToString("000");
     }
+    
+    // 방만들기 버튼 클릭 시 호출될 함수
+ public void ClickCreateRoom()
+    {
+        string _roomName = roomName.text;
+        
+        if (string.IsNullOrEmpty(roomName.text))  //룸 이름이 없거나 Null일 경우 룸 이름 지정
+            _roomName = "ROOM_" + Random.Range(0, 999).ToString("000");
+
+        PhotonNetwork.LocalPlayer.NickName = userId.text;  //로컬 플레이어의 이름을 설정
+        
+        PlayerPrefs.SetString("USER_ID", userId.text);  //플레이어 이름을 저장
+
+        //생성할 룸의 조건 설정
+        RoomOptions roomOptions = new RoomOptions();  //using Photon.Realtime;
+        roomOptions.IsOpen = true;     //입장 가능 여부
+        roomOptions.IsVisible = true;  //로비에서 룸의 노출 여부
+        roomOptions.MaxPlayers = 8;    //룸에 입장할 수 있는 최대 접속자 수
+
+        //지정한 조건에 맞는 룸 생성 함수
+        PhotonNetwork.CreateRoom(_roomName, roomOptions, TypedLobby.Default);  //TypedLobby.Default 어느 로비에 방을 만들껀지? 
+    }
+    
+     //PhotonNetwork.CreateRoom() 이 함수가 실패 하면 호출되는 함수(같은 이름의 방이 있을 때 실패함)
+    public override void OnCreateRoomFailed(short returnCode, string message)
+    {
+        Debug.Log("방 만들기 실패"); //주로 같은 이름의 방이 존재할 때 룸생성 에러가 발생된다.
+        Debug.Log(returnCode.ToString()); //오류 코드(ErrorCode 클래스)
+        Debug.Log(message); //오류 메시지
+    }
+    
+    //생성된 룸 목록이 변경됐을 때 호출되는 콜백 함수(방 리스트 갱신은 로비에서만 가능하다.)
+    public override void OnRoomListUpdate(List<RoomInfo> roomList)
+    {
+        int roomCount = roomList.Count;
+        for (int i = 0; i < roomCount; i++)
+        {
+            if (!roomList[i].RemovedFromList)
+            {
+                if (!myList.Contains(roomList[i])) myList.Add(roomList[i]);
+                else myList[myList.IndexOf(roomList[i])] = roomList[i];
+            }
+            else if (myList.IndexOf(roomList[i]) != -1) 
+                myList.RemoveAt(myList.IndexOf(roomList[i]));
+        }
+
+        //룸 목록을 다시 받았을 때 갱신하기 위해 기존에 생성된 RoomItem을 삭제
+        foreach (GameObject obj in GameObject.FindGameObjectsWithTag("ROOM_ITEM"))
+            Destroy(obj);
+            
+        //스크롤 영역 초기화
+        scrollContents.GetComponent<RectTransform>().sizeDelta = Vector2.zero;
+
+        for (int i = 0; i < myList.Count; i++)
+        {
+            GameObject room = (GameObject)Instantiate(roomItem);
+            
+            room.transform.SetParent(scrollContents.transform, false);//생성한 RoomItem 프리팹의 Parent를 지정
+
+            //생성한 RoomItem에 표시하기 위한 텍스트 정보 전달
+            RoomData roomData = room.GetComponent<RoomData>();
+            roomData.roomName = myList[i].Name;
+            roomData.connectPlayer = myList[i].PlayerCount;
+            roomData.maxPlayer = myList[i].MaxPlayers;
+
+            //텍스트 정보를 표시
+            roomData.DispRoomData(myList[i].IsOpen);
+        }//for (int i = 0; i < roomCount; i++)
+    }// public override void OnRoomListUpdate(List<RoomInfo> roomList)
 
 ```
 
