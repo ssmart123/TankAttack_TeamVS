@@ -114,8 +114,7 @@ void Awake()
         PhotonNetwork.JoinRoom(roomName);
     }
 ```
-    
-    </details>
+ </details>
 
 ## 2.랜덤방 입장  
 
