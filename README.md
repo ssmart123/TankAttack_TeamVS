@@ -95,7 +95,20 @@ void Awake()
         }//for (int i = 0; i < roomCount; i++)
     }// public override void OnRoomListUpdate(List<RoomInfo> roomList)
 
+//RoomItem이 클릭되면 호출될 이벤트 연결 함수
+    public void OnClickRoomItem(string roomName)
+    {
+        //로컬 플레이어의 이름을 설정
+        PhotonNetwork.LocalPlayer.NickName = userId.text;
+        //플레이어 이름을 저장
+        PlayerPrefs.SetString("USER_ID", userId.text);
+
+        //인자로 전달된 이름에 해당하는 룸으로 입장
+        PhotonNetwork.JoinRoom(roomName);
+    }
 ```
+###### 로비화면의 Make Room버튼을 누르면 방을 만들 수 있도록 구현하였다. 만들어진 방은 다른 플레이어들이 볼수 있고  
+###### 방을 클릭하면 해당 방에 접속할 수 있다.
 
 ## 2.랜덤방 입장  
 
