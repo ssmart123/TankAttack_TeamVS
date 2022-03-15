@@ -8,52 +8,66 @@
 라운드 시작 후 10초가 지나기 전까진 공격을 할 수 없습니다.  
 라운드 시작 후 30초가 지나면 미니맵이 활성화되어 아군과 적군의 위치를 알 수 있습니다.  
 
-## 방 생성  
+## 1.방 생성  
 
 https://user-images.githubusercontent.com/63942174/158361325-c7fa9025-d939-433f-93c3-f8e82386f4a0.mp4
+``` C#
+void Awake()
+    {
+        //포톤 클라우드 서버 접속 여부 확인
+        if (!PhotonNetwork.IsConnected)
+            PhotonNetwork.ConnectUsingSettings();  //1. 포톤 클라우드에 접속
+        
+        userId.text = GetUserId();  //사용자 이름 설정
 
-## 랜덤방 입장  
+        //룸 이름을 무작위로 설정
+        roomName.text = "Room_" + Random.Range(0, 999).ToString("000");
+    }
+
+```
+
+## 2.랜덤방 입장  
 
 https://user-images.githubusercontent.com/63942174/158361351-8a318f42-bbbd-47c3-8636-2c99131d8c59.mp4
 
 
 
-## 볼륨조절  
+## 3.볼륨조절  
 
 https://user-images.githubusercontent.com/63942174/158361437-9871a9f5-b60e-4c03-8db9-059c4a164ae2.mp4
 
 
-## 팀 이동 및 준비  
+## 4.팀 이동 및 준비  
 
 https://user-images.githubusercontent.com/63942174/158361475-0e5b83a3-28b5-4035-bcfd-41b239ba9bec.mp4
 
 
-## 게임시작  
+## 5.게임시작  
 
 https://user-images.githubusercontent.com/63942174/158361547-473582dc-5ed9-4b3e-a020-986cfd3ce74c.mp4
 
 
-## 게임중 나가기  
+## 6.게임중 나가기  
 
 https://user-images.githubusercontent.com/63942174/158361614-af9bfcd3-866e-4320-8263-bab11f5ab0b9.mp4
 
 
-## 적공격  
+## 7.적공격  
 
 https://user-images.githubusercontent.com/63942174/158361758-0b3e8f61-7d3b-408e-a889-6ef53706b9a1.mp4
 
 
-## 이동과 카메라 회전  
+## 8.이동과 카메라 회전  
 
 https://user-images.githubusercontent.com/63942174/158361799-9cb3bf1c-8fa2-49ba-9935-400b23727e87.mp4
 
 
-## 미니맵 생성  
+## 9.미니맵 생성  
 
 https://user-images.githubusercontent.com/63942174/158361902-0618f85d-ab83-44aa-b93c-ec21983daf28.mp4
 
 
-## 승리  
+## 10.승리  
 
 https://user-images.githubusercontent.com/63942174/158362001-97c7fa5c-9de9-4452-8724-399135141cd5.mp4
 
