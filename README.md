@@ -1,83 +1,17 @@
 # TankAttack_TeamVS
-### 
-<span style="color : #ffd33d">포톤 서버를 사용하는 실시간 팀 대전게임입니다.</span>
+포톤 서버를 사용하는 실시간 팀 대전게임입니다.
+
+- 플레이 방법
+최대 8명이서 플레이할 수 있습니다.
+키보드로 탱크를 이동시킬 수 있고 마우스 좌클릭을 눌러 포탄을 발사할 수 있습니다.
+총 5라운드를 진행하며 블루팀과 레드팀의 승리 수의 합이 5가 되면 승리 수가 많은 팀이 이기게 됩니다.
+라운드 시작 후 10초가 지나기 전까진 공격을 할 수 없습니다.
+라운드 시작 후 30초가 지나면 미니맵이 활성화되어 아군과 적군의 위치를 알 수 있습니다.
 
 
 ### 어택구동을 위한 코드구현
 https://user-images.githubusercontent.com/63942174/158009028-db73771c-60b2-451e-92df-ee2eece69623.mp4
 
-
-
-``` C#
-using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
-
-public class Cannon : MonoBehaviour
-{
-    //포탄의 속도
-    public float speed = 6000.0f;
-    //폭발 효과 프리팹 연결 변수
-    public GameObject expEffect;
-
-    private CapsuleCollider _collider;
-    private Rigidbody _rigidbody;
-
-    //포탄을 발사한 플레이어의 ID 저장
-    [HideInInspector] public int AttackerId = -1; //-1 이면 방 밖으로 나갔다는 뜻
-    [HideInInspector] public string AttackerTeam = "blue"; //어느팀에서 쏜 총알인지?
-
-    // Start is called before the first frame update
-    void Start()
-    {
-        _collider = GetComponent<CapsuleCollider>();
-        _rigidbody = GetComponent<Rigidbody>();
-
-        GetComponent<Rigidbody>().AddForce(transform.forward * speed);
-
-        //3초가 지난 후 자동 폭발하는 코루틴 실행
-        StartCoroutine(this.ExplosionCannon(3.0f));
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-        
-    }
-
-    void OnTriggerEnter(Collider a_Col)
-    {
-        //지연 또는 적 탱크에 충돌한 경우 즉시 폭발하도록 코루틴 실행
-        StartCoroutine(this.ExplosionCannon(0.0f));
-    }
-
-    IEnumerator ExplosionCannon(float tm)
-    {
-        yield return new WaitForSeconds(tm);
-
-        //충돌 콜백 함수가 발생하지 zmff않도록 Collider를 비활성화
-        if (_collider != null)
-            _collider.enabled = false;
-        //물리엔진의 영향을 받을 필요 없음
-        //_rigidbody.isKinematic = true;
-        if (_rigidbody != null)
-            _rigidbody.velocity = Vector3.zero;
-
-        //폭발 프리팹 동적 생성
-        GameObject obj = (GameObject)Instantiate(expEffect,
-            transform.position - (transform.forward * 9.0f),
-            Quaternion.identity);
-
-        Destroy(obj, 1.0f);
-
-        //Trail Renderer가 소멸되기까지 잠시 대기 후 삭제 처리
-        Destroy(this.gameObject, 1.0f);
-    }
-}
-
-```
-
-##### 이코드를 구현기위해 어저쩌구저쩌구 3줄이상 적지마
 
 
 
