@@ -377,6 +377,145 @@ https://user-images.githubusercontent.com/63942174/158361475-0e5b83a3-28b5-4035-
     }
     
     
+    bool IsDifferentList() //true면 다르다는 뜻 false면 같다는 뜻
+    {
+        GameObject[] a_TkNodeItems = GameObject.FindGameObjectsWithTag("TKNODE_ITEM");
+
+        if(a_TkNodeItems == null)
+            return true;
+
+        if (PhotonNetwork.PlayerList.Length != a_TkNodeItems.Length)
+            return true;
+
+        foreach (Player a_RefPlayer in PhotonNetwork.PlayerList)
+        {
+            bool a_FindNode = false;
+            TankNodeItem TankData = null;
+            foreach (GameObject a_Node in a_TkNodeItems)
+            {
+                TankData = a_Node.GetComponent<TankNodeItem>();
+                if (TankData == null)
+                    continue;
+
+                if(TankData.m_UniqID == a_RefPlayer.ActorNumber)
+                {
+                    if (TankData.m_TeamKind != ReceiveSelTeam(a_RefPlayer))
+                        return true; //해당 유저의 팀이 변경 되었다면...
+
+                    if (TankData.m_IamReady != ReceiveReady(a_RefPlayer))
+                        return true; //해당 Ready 상태가 변경 되었다면...
+
+                    a_FindNode = true;
+                    break;
+                }
+            }//foreach (GameObject a_Node in GameObject.FindGameObjectsWithTag("TKNODE_ITEM"))
+
+            if(a_FindNode == false) 
+                return true; //해당 유저가 리스트에 존재하지 않으면....
+
+        }//foreach (Player a_RefPlayer in PhotonNetwork.PlayerList)
+
+        return false; //일치한다는 뜻
+    }
+
+    // 리스트 UI갱신
+    void RefreshPhotonTeam()
+    {
+        foreach (GameObject obj in GameObject.FindGameObjectsWithTag("TKNODE_ITEM"))
+        {
+            Destroy(obj);
+        }
+
+        GameObject[] a_tanks = GameObject.FindGameObjectsWithTag("TANK");
+
+        string a_TeamKind = "blue";
+        GameObject a_TkNode = null;
+
+
+        foreach (Player a_RefPlayer in PhotonNetwork.PlayerList)
+        {
+            a_TeamKind = ReceiveSelTeam(a_RefPlayer);
+            a_TkNode = (GameObject)Instantiate(m_TkNodeItem);
+
+            //팀이 뭐냐?에 따라서 스크롤 뷰를 분기 해 준다.
+            if (a_TeamKind == "blue")
+                a_TkNode.transform.SetParent(scrollTeam1.transform, false);
+            else if (a_TeamKind == "red")
+                a_TkNode.transform.SetParent(scrollTeam2.transform, false);
+
+            //생성한 RoomItem에 표시하기 위한 텍스트 정보 전달
+            TankNodeItem TankData = a_TkNode.GetComponent<TankNodeItem>();
+            //텍스트 정보를 표시
+            if (TankData != null)
+            {
+                TankData.m_UniqID = a_RefPlayer.ActorNumber;
+                TankData.m_TeamKind = a_TeamKind;
+                TankData.m_IamReady = ReceiveReady(a_RefPlayer);
+                bool isMine = TankData.m_UniqID == PhotonNetwork.LocalPlayer.ActorNumber;
+                TankData.DispPlayerData(a_RefPlayer.NickName, isMine);
+            }
+
+            //이름표 색깔 바꾸기
+            ChangeTankNameColor(a_tanks, a_RefPlayer.ActorNumber, a_TeamKind);
+            // 미니맵 플레이어 색깔 바꾸기
+            ChangeMiniMapTankColor(a_tanks, a_RefPlayer.ActorNumber, a_TeamKind);
+        }//foreach (Player a_RefPlayer in PhotonNetwork.PlayerList)
+
+        //-------------- Ready Off 하기...
+        if (ReceiveReady(PhotonNetwork.LocalPlayer) == true)
+        {
+            m_Team1Ready.gameObject.SetActive(false);
+            m_Team2Ready.gameObject.SetActive(false);
+
+            m_Team1ToTeam2.gameObject.SetActive(false);
+            m_Team2ToTeam1.gameObject.SetActive(false);
+        }
+        else
+        {
+            a_TeamKind = ReceiveSelTeam(PhotonNetwork.LocalPlayer);
+            if (a_TeamKind == "blue")
+            {
+                m_Team1Ready.gameObject.SetActive(true);
+                m_Team2Ready.gameObject.SetActive(false);
+                m_Team1ToTeam2.gameObject.SetActive(true);
+                m_Team2ToTeam1.gameObject.SetActive(false);
+            }
+            else if (a_TeamKind == "red")
+            {
+                m_Team1Ready.gameObject.SetActive(false);
+                m_Team2Ready.gameObject.SetActive(true);
+                m_Team1ToTeam2.gameObject.SetActive(false);
+                m_Team2ToTeam1.gameObject.SetActive(true);
+            }
+        }
+        //-------------- Ready Off 하기...
+
+    }//void RefreshPhotonTeam()
+    
+    
+    void ChangeTankNameColor(GameObject[] a_tanks, int ActorNumber, string a_TeamKind)
+    {
+        //이름표 색깔 바꾸기
+        DisplayUserId a_DpUserId = null;
+        foreach (GameObject tank in a_tanks)
+        {
+            a_DpUserId = tank.GetComponent<DisplayUserId>();
+            if (a_DpUserId != null)
+            {
+                //tankDamage.pv.ownerId   ==   //tankDamage.pv.owner.ID
+                if (a_DpUserId.pv.Owner.ActorNumber == ActorNumber)
+                {
+                    if (a_TeamKind == "blue")
+                        a_DpUserId.userId.color = new Color32(60, 60, 255, 255);
+                    else
+                        a_DpUserId.userId.color = Color.red;
+
+                    break;
+                }//if (a_DpUserId.pv.Owner.ActorNumber == ActorNumber)
+            }//if (a_DpUserId != null)
+        }//foreach (GameObject tank in a_tanks)
+    }
+
     
     #region --------------- Ready 상태 동기화 처리
     void InitReadyProps()
@@ -435,11 +574,105 @@ https://user-images.githubusercontent.com/63942174/158361547-473582dc-5ed9-4b3e-
 
   
 <details>  
-    <summary>랜덤방 입장</summary>
+    <summary>게임 </summary>
 
 ```C#
     
     
+    bool IsGamePossible()  //게임이 가능한 상태인지? 체크하는 함수
+    {
+        //나가는 타이밍에 포톤 정보들이 한플레임 먼저 사라지고 
+        //LoadScene()이 한플레임 늦게 호출되는 문제 해결법
+        if (PhotonNetwork.CurrentRoom == null || PhotonNetwork.LocalPlayer == null)  
+            return false; //동기화 가능한 상태 일때만 업데이트를 계산해 준다.
+
+        if (PhotonNetwork.CurrentRoom.CustomProperties.ContainsKey("GameState") == false ||
+            PhotonNetwork.CurrentRoom.CustomProperties.ContainsKey("Team1Win") == false ||
+            PhotonNetwork.CurrentRoom.CustomProperties.ContainsKey("Team2Win") == false)
+            return false;
+
+        //PhotonNetwork.CurrentRoom.CustomProperties 에 저장되어 있는 게임 상태 받아오기
+        m_GameState = ReceiveGState();
+        m_Team1Win = (int)PhotonNetwork.CurrentRoom.CustomProperties["Team1Win"];
+        m_Team2Win = (int)PhotonNetwork.CurrentRoom.CustomProperties["Team2Win"];
+
+        return true;
+    }
+
+    // 참가 유저 모두 Ready 버튼 눌렀는지 감시하고 게임을 시작하게 처리하는 함수
+    void AllReadyObserver()
+    {
+        if (m_GameState != GameState.GS_Ready) //GS_Ready 상태에서만 확인한다.
+            return;
+
+        int a_OldGoWait = (int)m_GoWaitGame;
+
+        bool a_AllReady = true;
+        foreach (Player a_RefPlayer in PhotonNetwork.PlayerList)
+        {
+            if (ReceiveReady(a_RefPlayer) == false)
+            {
+                a_AllReady = false;
+                break;
+            }
+        }//foreach (Player a_RefPlayer in PhotonNetwork.PlayerList)
+
+        if (a_AllReady == true) //모두가 준비 버튼을 누르고 기다리고 있다는 뜻 
+        {
+            //누가 발생시켰든 동기화 시키려고 하면
+            if (m_RoundCount == 0 && PhotonNetwork.CurrentRoom.IsOpen == true)
+            {
+                //게임이 시작되면 다른 유저 들어오지 못하도록 막는 부분
+                PhotonNetwork.CurrentRoom.IsOpen = false;
+            }
+
+            //--- 각 플레이어 PC 별로 3, 2, 1, 0 타이머 UI 표시를 위한 코드
+            if (0.0f < m_GoWaitGame)  //타이머 카운티 처리
+            {
+                m_GoWaitGame = m_GoWaitGame - Time.deltaTime;
+
+                if (m_WaitTmText != null && m_GameState != GameState.GS_GameEnd)
+                {
+                    m_WaitTmText.gameObject.SetActive(true);
+                    m_WaitTmText.text = ((int)m_GoWaitGame).ToString();
+                }
+
+                //마스터 클라이언트는 각 유저의 자리배치를 해 줄 것이다.
+                //총 4번만 보낸다. MasterClient가 나갈 경우를 대비해서...
+                if (PhotonNetwork.IsMasterClient == true)
+                if (0.0f < m_GoWaitGame && a_OldGoWait != (int)m_GoWaitGame) 
+                {//자리 배정
+                    SitPosInxMasterCtrl();
+                }//if(a_OldGoWait != (int)m_GoWaitGame) //자리 배정
+
+                if (m_GoWaitGame <= 0.0f) //이건 한번만 발생할 것이다.
+                {//진짜 게임 시작 준비
+                    m_RoundCount++;
+
+                    Team1Panel.SetActive(false);
+                    Team2Panel.SetActive(false);
+                    m_WaitTmText.gameObject.SetActive(false);
+
+                    m_ChekWinTime = 2.0f;
+                    m_GoWaitGame = 0.0f;
+
+
+                    isMiniMapActive = true;
+                   // Debug.Log(isMiniMapActive);
+
+                }//if (m_GoWaitGame <= 0.0f)
+            }//if (0.0f < m_GoWaitGame) 
+            //--- 각 플레이어 PC 별로 타이머 UI 표시를 위한 코드
+
+            //게임이 시작 되었어야 하는데 아직 시작 되지 않았다면....
+            if (PhotonNetwork.IsMasterClient == true) //마스터 클라이언트만 체크하고 보낸다.
+            if (m_GoWaitGame <= 0.0f) //&& ReceiveGState() == GameState.GS_Ready) //위에서 체크함 
+            {
+                SendGState(GameState.GS_Playing);
+            }
+        }//if (a_AllReady == true) //모두가 준비 버튼을 누르고 기다리고 있다는 뜻 
+
+    }//void AllReadyObserver()
 ```
     
  </details>  
