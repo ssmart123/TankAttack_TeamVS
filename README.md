@@ -181,8 +181,6 @@ https://user-images.githubusercontent.com/63942174/158361437-9871a9f5-b60e-4c03-
     <summary>환경설정을 위한 config박스 컨트롤</summary>
 
 ```C#
-    
-    
      private void Update()
     {
         //  메뉴 아이콘 회전 관련
@@ -233,10 +231,200 @@ https://user-images.githubusercontent.com/63942174/158361475-0e5b83a3-28b5-4035-
 
   
 <details>  
-    <summary>사운드 ㅂ</summary>
+    <summary>팀 이동 관련 </summary>
 
 ```C#
+      private void Awake()
+    {
+        //PhotonView 컴포넌트 할당
+        pv = GetComponent<PhotonView>();
     
+        //모든 클라우드의 네트워크 메시지 수신을 다시 연결
+        PhotonNetwork.IsMessageQueueRunning = true;
+    
+        //룸에 입장 후 기존 접속자 정보를 출력
+        GetConnectPlayerCount();
+    
+        //----- CustomProperties 초기화
+        InitSelTeamProps();
+        InitReadyProps();
+        InitGStateProps();
+        InitTeam1WinProps();
+        InitTeam2WinProps();
+    
+    }
+    private void Start()
+    {
+        //-- TeamSetting
+        //-- 팀1 버튼 처리
+        //레드팀으로 이동
+        if (m_Team1ToTeam2 != null)
+            m_Team1ToTeam2.onClick.AddListener(() => { SendSelTeam("red"); });
+
+        if (m_Team1Ready != null)
+            m_Team1Ready.onClick.AddListener(() => { SendReady(1); });
+
+        //-- 팀2 버튼 처리
+        //블루팀으로 이동
+        if (m_Team2ToTeam1 != null)
+            m_Team2ToTeam1.onClick.AddListener(() =>{ SendSelTeam("blue");    });
+
+        if (m_Team2Ready != null)
+            m_Team2Ready.onClick.AddListener(() => { SendReady(1); });
+    }
+    
+    
+      private void Update()
+    {
+        if (IsGamePossible() == false) //게임 플로어를 돌려도 되는 상태인지 확인한다.
+            return;
+
+        //리스트 UI 갱신
+        if (m_GameState == GameState.GS_Ready)
+        {
+            if (IsDifferentList() == true)
+            {
+                RefreshPhotonTeam();  
+            }
+        }//if (m_GameState == GameState.GS_Ready)
+        
+        //채팅 구현
+        if (Input.GetKeyDown(KeyCode.Return))
+        {
+            bEnter = !bEnter;
+
+            if (bEnter == true)
+            {
+                textChat.gameObject.SetActive(bEnter);
+                textChat.ActivateInputField(); //<--- 커서를 인풋필드로 이동시켜 줌
+            }
+            else
+            {
+                textChat.gameObject.SetActive(bEnter);
+
+                if (textChat.text != "")
+                    EnterChat();
+            }
+        }//if (Input.GetKeyDown(KeyCode.Return)) 
+
+        // 참가 유저 모두 Ready 버튼 눌렀는지 감시하고 게임을 시작하게 처리하는 함수
+        AllReadyObserver();
+
+        // 게임이 시작되었을 때
+        if (m_GameState == GameState.GS_Playing)
+        {
+            Team1Panel.SetActive(false);
+            Team2Panel.SetActive(false);
+            m_WaitTmText.gameObject.SetActive(false);
+            WinCountRoot.SetActive(true);
+        }//if (m_GameState == GameState.GS_Playing)
+
+        if (isMiniMapActive == true)
+            MiniMapShow();
+
+        //한쪽팀이 전멸했는지 체크하고 승리 / 패배 를 감시하고 처리해 주는 함수
+        WinLoseObserver();
+
+        // 게임이 종료되었을떄
+        if (m_GameState == GameState.GS_GameEnd)
+        {
+            m_WaitTmText.gameObject.SetActive(false);
+
+            m_BackLobby = m_BackLobby - Time.deltaTime;
+
+            if (m_BackLobby <= 0)
+                OnClickExitRoom();
+        }
+
+    }// void Update()
+
+    
+     //룸 접속자 정보를 조회하는 함수
+    void GetConnectPlayerCount()
+    {
+        //현재 입장한 룸 정보를 받아옴
+        Room currRoom = PhotonNetwork.CurrentRoom;  //using Photon.Realtime;
+
+        //현재 룸의 접속자 수와 최대 접속 가능한 수를 문자열로 구성한 후 Text UI 항목에 출력
+        ConnectTxt.text = currRoom.PlayerCount.ToString()
+                          + "/"
+                          + currRoom.MaxPlayers.ToString();
+    }
+    
+     //네트워크 플레이어가 룸을 나가거나 접속이 끊어졌을 때 호출되는 함수
+    public override void OnPlayerLeftRoom(Player outPlayer)
+    {
+        GetConnectPlayerCount();
+    }
+    
+    
+    //룸 나가기 버튼 클릭 이벤트에 연결될 함수
+    public void OnClickExitRoom()
+    {
+        //로그 메시지에 출력할 문자열 생성
+        string msg = "\n<color=#ff0000>[" + PhotonNetwork.LocalPlayer.NickName + "] Disconnected</color>";
+        //RPC 함수 호출
+        pv.RPC("LogMsg", RpcTarget.AllBuffered, msg);
+        //현재 룸을 빠져나가며 생성한 모든 네트워크 객체를 삭제
+        PhotonNetwork.LeaveRoom();
+    }
+    
+    //룸에서 접속 종료됐을 때 호출되는 콜백 함수
+    public override void OnLeftRoom()  //PhotonNetwork.LeaveRoom(); 성공했을 때 
+    {
+        //로비 씬을 호출
+        UnityEngine.SceneManagement.SceneManager.LoadScene("scLobby");
+    }
+    
+    
+    
+    #region --------------- Ready 상태 동기화 처리
+    void InitReadyProps()
+    { //속도를 위해 버퍼를 미리 만들어 놓는다는 의미
+        m_PlayerReady.Clear();
+        m_PlayerReady.Add("IamReady", 0);      //기본적으로 아직 준비전 상태로 시작한다.
+        PhotonNetwork.LocalPlayer.SetCustomProperties(m_PlayerReady);  
+        //캐릭터 별로 동기화 시키고 싶은 경우
+    }//void InitSelTeamProps()
+
+    //--------------- Send Ready 
+    void SendReady(int a_Ready = 1)
+    {
+        if (m_PlayerReady == null)
+        {
+            m_PlayerReady = new ExitGames.Client.Photon.Hashtable();
+            m_PlayerReady.Clear();
+        }
+
+        if (m_PlayerReady.ContainsKey("IamReady") == true)
+        {
+            m_PlayerReady["IamReady"] = a_Ready;
+        }
+        else
+        {
+            m_PlayerReady.Add("IamReady", a_Ready);
+        }
+
+        PhotonNetwork.LocalPlayer.SetCustomProperties(m_PlayerReady);  //캐릭터 별로 동기화 시키고 싶은 경우
+    }
+    //--------------- Send Ready
+
+    //--------------- Receive Ready
+    bool ReceiveReady(Player a_Player) //Ready 상태를 받아서 처리하는 부분
+    {
+        if (a_Player == null)
+            return false;
+
+        if (a_Player.CustomProperties.ContainsKey("IamReady") == false)
+            return false;
+
+        if ((int)a_Player.CustomProperties["IamReady"] == 0)
+            return false;
+        else
+            return true;
+    }
+    //--------------- Receive Ready
+    #endregion  //--------------- Ready 상태 동기화 처리
 ```
     
  </details>  
