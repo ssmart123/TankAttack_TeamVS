@@ -124,50 +124,209 @@ https://user-images.githubusercontent.com/63942174/158361351-8a318f42-bbbd-47c3-
 <details>  
     <summary>랜덤방 입장</summary>
 
-    ```C#
+```C#
+     public override void OnConnectedToMaster()
+    {
+        //단순 포톤 서버 접속만 된 상태 (ConnectedToMaster)
+        Debug.Log("서버 접속 완료");
+        PhotonNetwork.JoinLobby();
+    }
     
     
-    ```
+    // PhotonNetwork.JoinLobby() 성공시 호출되는 로비 접속 콜백함수
+    public override void OnJoinedLobby()
+    {
+        Debug.Log("로비접속완료");
+        userId.text = GetUserId(); //방에서 로비로 나올 때도 유저 ID를 하나 셋팅해 주어야 한다.
+    }
+    
+     public override void OnJoinedRoom()
+    {
+        Debug.Log("방 참가 완료");
+        //룸 씬으로 이동하는 코루틴 실행
+        StartCoroutine(this.LoadBattleField());
+    }
+
+    //PhotonNetwork.JoinRandomRoom() 이 함수 실패한 경우 호출되는 콜백 함수
+    public override void OnJoinRandomFailed(short returnCode, string message)
+    {
+        Debug.Log("랜덤 방 참가 실패 (참가할 방이 존재하지 않습니다.)");
+    }
+    
+      //룸 씬으로 이동하는 코루틴 함수
+    IEnumerator LoadBattleField()        //최종 배틀필드 씬 로딩
+    {
+        //씬을 이동하는 동안 포톤 클라우드 서버로부터 네트워크 메시지 수신 중단
+        PhotonNetwork.IsMessageQueueRunning = false;
+        //백그라운드로 씬 로딩
+
+        Time.timeScale = 1.0f;  //게임에 들어갈 때는 원래 속도로...
+
+        AsyncOperation ao = SceneManager.LoadSceneAsync("scBattleField");
+
+        yield return ao;
+    }
+    
+```
     
  </details>  
     
     
-## 3.볼륨조절  
+## 3.환경설정
 
 https://user-images.githubusercontent.com/63942174/158361437-9871a9f5-b60e-4c03-8db9-059c4a164ae2.mp4
 
+      
+<details>  
+    <summary>환경설정을 위한 config박스 컨트롤</summary>
+
+```C#
+    
+    
+     private void Update()
+    {
+        //  메뉴 아이콘 회전 관련
+        if (isMenuOnOff)
+            MenuImg.rectTransform.rotation = Quaternion.Lerp(MenuImg.rectTransform.rotation, Quaternion.Euler(0, 0, 0), MenuRotSpeed * Time.deltaTime);
+        else
+            MenuImg.rectTransform.rotation = Quaternion.Lerp(MenuImg.rectTransform.rotation, Quaternion.Euler(0, 0, 45), MenuRotSpeed * Time.deltaTime);
+
+        // 메뉴 스크롤 업데이트
+        MenuScrollUpdate();
+        // 사운드 볼륨 조절
+        SoundPlay();
+    }
+    // 메뉴 스크롤 업데이트 메소드
+    private void MenuScrollUpdate()
+    {
+        if (isMenuOnOff && MenuRoot != null && MenuRoot.transform.localPosition.x > MenuPosOrigin.x)
+        {
+            MenuRoot.transform.localPosition =
+                Vector3.MoveTowards(MenuRoot.transform.localPosition, MenuPosOrigin, MenuScrollSpeed * Time.deltaTime);
+        }
+        else if (!isMenuOnOff && MenuRoot != null && MenuRoot.transform.localPosition.x < MenuPosHide.x)
+        {
+            MenuRoot.transform.localPosition =
+                Vector3.MoveTowards(MenuRoot.transform.localPosition, MenuPosHide, MenuScrollSpeed * Time.deltaTime);
+        }
+    }
+    // 사운드 볼륨 조절 메소드
+    private void SoundPlay()
+    {
+        if (CurAudioSource != null)
+        {
+            bool a_SoundOnOff = System.Convert.ToBoolean(PlayerPrefs.GetInt("SoundOnOff"));
+            CurAudioSource.mute = !a_SoundOnOff;
+
+            float a_SoundVolume = PlayerPrefs.GetFloat("SoundVolume");
+            CurAudioSource.volume = a_SoundVolume;
+        }
+    }
+    
+```
+    
+ </details>  
 
 ## 4.팀 이동 및 준비  
 
 https://user-images.githubusercontent.com/63942174/158361475-0e5b83a3-28b5-4035-bcfd-41b239ba9bec.mp4
 
+  
+<details>  
+    <summary>사운드 ㅂ</summary>
 
+```C#
+    
+```
+    
+ </details>  
+    
 ## 5.게임시작  
 
 https://user-images.githubusercontent.com/63942174/158361547-473582dc-5ed9-4b3e-a020-986cfd3ce74c.mp4
 
+  
+<details>  
+    <summary>랜덤방 입장</summary>
 
+```C#
+    
+    
+```
+    
+ </details>  
+    
 ## 6.게임중 나가기  
 
 https://user-images.githubusercontent.com/63942174/158361614-af9bfcd3-866e-4320-8263-bab11f5ab0b9.mp4
 
+  
+<details>  
+    <summary>랜덤방 입장</summary>
 
+```C#
+    
+    
+```
+    
+ </details>  
+    
 ## 7.적공격  
 
 https://user-images.githubusercontent.com/63942174/158361758-0b3e8f61-7d3b-408e-a889-6ef53706b9a1.mp4
 
+*  
+<details>  
+    <summary>랜덤방 입장</summary>
 
+```C#
+    
+    
+```
+    
+ </details>  **
+    
 ## 8.이동과 카메라 회전  
 
 https://user-images.githubusercontent.com/63942174/158361799-9cb3bf1c-8fa2-49ba-9935-400b23727e87.mp4
 
+      
+<details>  
+    <summary>랜덤방 입장</summary>
+
+```C#
+    
+    
+```
+    
+ </details>  
 
 ## 9.미니맵 생성  
 
 https://user-images.githubusercontent.com/63942174/158361902-0618f85d-ab83-44aa-b93c-ec21983daf28.mp4
 
+      
+<details>  
+    <summary>랜덤방 입장</summary>
+
+```C#
+    
+    
+```
+    
+ </details>  
 
 ## 10.승리  
 
 https://user-images.githubusercontent.com/63942174/158362001-97c7fa5c-9de9-4452-8724-399135141cd5.mp4
 
+  
+<details>  
+    <summary>랜덤방 입장</summary>
+
+```C#
+    
+    
+```
+    
+ </details>  
