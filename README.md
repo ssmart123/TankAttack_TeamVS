@@ -351,32 +351,6 @@ https://user-images.githubusercontent.com/63942174/158361475-0e5b83a3-28b5-4035-
                           + currRoom.MaxPlayers.ToString();
     }
     
-     //네트워크 플레이어가 룸을 나가거나 접속이 끊어졌을 때 호출되는 함수
-    public override void OnPlayerLeftRoom(Player outPlayer)
-    {
-        GetConnectPlayerCount();
-    }
-    
-    
-    //룸 나가기 버튼 클릭 이벤트에 연결될 함수
-    public void OnClickExitRoom()
-    {
-        //로그 메시지에 출력할 문자열 생성
-        string msg = "\n<color=#ff0000>[" + PhotonNetwork.LocalPlayer.NickName + "] Disconnected</color>";
-        //RPC 함수 호출
-        pv.RPC("LogMsg", RpcTarget.AllBuffered, msg);
-        //현재 룸을 빠져나가며 생성한 모든 네트워크 객체를 삭제
-        PhotonNetwork.LeaveRoom();
-    }
-    
-    //룸에서 접속 종료됐을 때 호출되는 콜백 함수
-    public override void OnLeftRoom()  //PhotonNetwork.LeaveRoom(); 성공했을 때 
-    {
-        //로비 씬을 호출
-        UnityEngine.SceneManagement.SceneManager.LoadScene("scLobby");
-    }
-    
-    
     bool IsDifferentList() //true면 다르다는 뜻 false면 같다는 뜻
     {
         GameObject[] a_TkNodeItems = GameObject.FindGameObjectsWithTag("TKNODE_ITEM");
@@ -564,6 +538,155 @@ https://user-images.githubusercontent.com/63942174/158361475-0e5b83a3-28b5-4035-
     }
     //--------------- Receive Ready
     #endregion  //--------------- Ready 상태 동기화 처리
+    
+      #region --------------- 게임 상태 동기화 처리
+    void InitGStateProps()
+    {
+        if (PhotonNetwork.CurrentRoom == null)
+            return;
+
+        m_StateProps.Clear();
+        m_StateProps.Add("GameState", (int)GameState.GS_Ready);
+        PhotonNetwork.CurrentRoom.SetCustomProperties(m_StateProps);
+    }
+
+    void SendGState(GameState a_GState)
+    {
+        //if (PhotonNetwork.CurrentRoom == null)
+        //    return;   //Update에서 체크 하고 있다.
+
+        //if (PhotonNetwork.IsMasterClient == false) //마스터만 보낸다.
+        //    return;   //Update에서 체크 하고 있다.
+
+        if (m_StateProps == null)
+        {
+            m_StateProps = new ExitGames.Client.Photon.Hashtable();
+            m_StateProps.Clear();
+        }
+
+        if (m_StateProps.ContainsKey("GameState") == true)
+            m_StateProps["GameState"] = (int)a_GState;
+        else
+            m_StateProps.Add("GameState", (int)a_GState);
+
+        PhotonNetwork.CurrentRoom.SetCustomProperties(m_StateProps);  
+
+    }
+
+    GameState ReceiveGState() //GameState 받아서 처리하는 부분
+    {
+        GameState a_RmVal = GameState.GS_Ready;
+
+        //if (PhotonNetwork.CurrentRoom == null)  
+        //    return a_RmVal;    //Update에서 체크 하고 있다.
+
+        if (PhotonNetwork.CurrentRoom.CustomProperties.ContainsKey("GameState") == true)
+            a_RmVal = (GameState)PhotonNetwork.CurrentRoom.CustomProperties["GameState"];
+
+        return a_RmVal;
+    }
+    #endregion  //--------------- 게임 상태 동기화 처리
+
+    
+    
+    #region --------------- 팀선택 동기화 처리
+    void InitSelTeamProps()
+    { //속도를 위해 버퍼를 미리 만들어 놓는다는 의미
+        m_SelTeamProps.Clear();
+        m_SelTeamProps.Add("MyTeam", "blue");   //기본적으로 나는 블루팀으로 시작한다.
+        PhotonNetwork.LocalPlayer.SetCustomProperties(m_SelTeamProps);  
+        //캐릭터 별로 동기화 시키고 싶은 경우
+    }//void InitSelTeamProps()
+
+    //--------------- Send SelTeam
+    void SendSelTeam(string a_Team)
+    {
+        if (string.IsNullOrEmpty(a_Team) == true)
+            return;
+
+        if (m_SelTeamProps == null)
+        {
+            m_SelTeamProps = new ExitGames.Client.Photon.Hashtable();
+            m_SelTeamProps.Clear();
+        }
+
+        if (m_SelTeamProps.ContainsKey("MyTeam") == true)
+        {
+            m_SelTeamProps["MyTeam"] = a_Team;
+        }
+        else
+        {
+            m_SelTeamProps.Add("MyTeam", a_Team);
+        }
+
+        PhotonNetwork.LocalPlayer.SetCustomProperties(m_SelTeamProps);  //캐릭터 별로 동기화 시키고 싶은 경우
+    }
+    //--------------- Send SelTeam
+
+    //--------------- Receive SelTeam
+    string ReceiveSelTeam(Player a_Player) //SelTeam 받아서 처리하는 부분
+    {
+        string a_TeamKind = "blue";
+
+        if (a_Player == null)
+            return a_TeamKind;
+
+        if (a_Player.CustomProperties.ContainsKey("MyTeam") == true)
+            a_TeamKind = (string)a_Player.CustomProperties["MyTeam"];
+
+        return a_TeamKind;
+    }
+    //--------------- Receive SelTeam
+    #endregion  //--------------- 팀선택 동기화 처리
+
+
+    #region --------------- Ready 상태 동기화 처리
+    void InitReadyProps()
+    { //속도를 위해 버퍼를 미리 만들어 놓는다는 의미
+        m_PlayerReady.Clear();
+        m_PlayerReady.Add("IamReady", 0);      //기본적으로 아직 준비전 상태로 시작한다.
+        PhotonNetwork.LocalPlayer.SetCustomProperties(m_PlayerReady);  
+        //캐릭터 별로 동기화 시키고 싶은 경우
+    }//void InitSelTeamProps()
+
+    //--------------- Send Ready 
+    void SendReady(int a_Ready = 1)
+    {
+        if (m_PlayerReady == null)
+        {
+            m_PlayerReady = new ExitGames.Client.Photon.Hashtable();
+            m_PlayerReady.Clear();
+        }
+
+        if (m_PlayerReady.ContainsKey("IamReady") == true)
+        {
+            m_PlayerReady["IamReady"] = a_Ready;
+        }
+        else
+        {
+            m_PlayerReady.Add("IamReady", a_Ready);
+        }
+
+        PhotonNetwork.LocalPlayer.SetCustomProperties(m_PlayerReady);  //캐릭터 별로 동기화 시키고 싶은 경우
+    }
+    //--------------- Send Ready
+
+    //--------------- Receive Ready
+    bool ReceiveReady(Player a_Player) //Ready 상태를 받아서 처리하는 부분
+    {
+        if (a_Player == null)
+            return false;
+
+        if (a_Player.CustomProperties.ContainsKey("IamReady") == false)
+            return false;
+
+        if ((int)a_Player.CustomProperties["IamReady"] == 0)
+            return false;
+        else
+            return true;
+    }
+    //--------------- Receive Ready
+    #endregion  //--------------- Ready 상태 동기화 처리
 ```
     
  </details>  
@@ -577,8 +700,6 @@ https://user-images.githubusercontent.com/63942174/158361547-473582dc-5ed9-4b3e-
     <summary>게임 </summary>
 
 ```C#
-    
-    
     bool IsGamePossible()  //게임이 가능한 상태인지? 체크하는 함수
     {
         //나가는 타이밍에 포톤 정보들이 한플레임 먼저 사라지고 
@@ -683,9 +804,40 @@ https://user-images.githubusercontent.com/63942174/158361614-af9bfcd3-866e-4320-
 
   
 <details>  
-    <summary>랜덤방 입장</summary>
+    <summary>게임중 나가기</summary>
 
 ```C#
+     private void Start()
+    {
+        // 나가기 버튼 연결
+        if (ExitRoomBtn != null)
+            ExitRoomBtn.onClick.AddListener(OnClickExitRoom);
+    }
+     //네트워크 플레이어가 룸을 나가거나 접속이 끊어졌을 때 호출되는 함수
+    public override void OnPlayerLeftRoom(Player outPlayer)
+    {
+        GetConnectPlayerCount();
+    }
+    
+    
+    //룸 나가기 버튼 클릭 이벤트에 연결될 함수
+    public void OnClickExitRoom()
+    {
+        //로그 메시지에 출력할 문자열 생성
+        string msg = "\n<color=#ff0000>[" + PhotonNetwork.LocalPlayer.NickName + "] Disconnected</color>";
+        //RPC 함수 호출
+        pv.RPC("LogMsg", RpcTarget.AllBuffered, msg);
+        //현재 룸을 빠져나가며 생성한 모든 네트워크 객체를 삭제
+        PhotonNetwork.LeaveRoom();
+    }
+    
+    //룸에서 접속 종료됐을 때 호출되는 콜백 함수
+    public override void OnLeftRoom()  //PhotonNetwork.LeaveRoom(); 성공했을 때 
+    {
+        //로비 씬을 호출
+        UnityEngine.SceneManagement.SceneManager.LoadScene("scLobby");
+    }
+    
     
     
 ```
@@ -746,7 +898,251 @@ https://user-images.githubusercontent.com/63942174/158362001-97c7fa5c-9de9-4452-
     <summary>랜덤방 입장</summary>
 
 ```C#
+      //한쪽팀이 전멸했는지 체크하고 승리 / 패배 를 감시하고 처리해 주는 함수
+    void WinLoseObserver()
+    {
+        //------------------- 승리 / 패배 체크
+        if (m_GameState == GameState.GS_Playing) //GS_Ready 상태의 중계가 좀 늦게와서 한쪽이 전멸 상태라는 걸 몇번 체크할 수는 있다.
+        {
+            m_ChekWinTime = m_ChekWinTime - Time.deltaTime;
+            if (m_ChekWinTime <= 0.0f) //게임이 시작된 후 2초 뒤부터 판정을 시작하기 위한 부분
+            {
+                int a_Tm1Count = 0;
+                int a_Tm2Count = 0;
+                int rowTm1 = 0;
+                int rowTm2 = 0;
+                int a_CurHP = 0;
+                string a_PlrTeam = "blue"; //Player Team
+
+                Player[] players = PhotonNetwork.PlayerList; //using Photon.Realtime;
+                foreach (Player _player in players)
+                {
+                    if (_player.CustomProperties.ContainsKey("MyTeam") == true)
+                        a_PlrTeam = (string)_player.CustomProperties["MyTeam"];
+
+                    if (a_PlrTeam == "blue")
+                    {
+                        if (_player.CustomProperties.ContainsKey("curHp") == true) //모든 캐릭터의 에너지바 동기화
+                        {
+                            a_CurHP = (int)_player.CustomProperties["curHp"];   //모든 캐릭터... 매플레임 계속 동기화 
+                            if (0 < a_CurHP)
+                            {
+                                rowTm1 = 1;
+                            }
+                        }
+                        a_Tm1Count++;
+
+                    }
+                    else if (a_PlrTeam == "red")
+                    {
+                        if (_player.CustomProperties.ContainsKey("curHp") == true) //모든 캐릭터의 에너지바 동기화
+                        {
+                            a_CurHP = (int)_player.CustomProperties["curHp"];   //모든 캐릭터... 매플레임 계속 동기화 
+                            if (0 < a_CurHP)
+                            {
+                                rowTm2 = 1;
+                            }
+                        }
+                        a_Tm2Count++;
+
+                    }
+                }//foreach (Player _player in players)
+
+                if (0 < a_Tm1Count && 0 < a_Tm2Count)   //양팀에 인원이 존재할 때만...
+                {
+                    if (rowTm1 == 0 || rowTm2 == 0)     //양 팀중에 한팀이 전멸했다면....
+                    {
+                        if ((m_Team1Win + m_Team2Win) < 5) //아직 5Round까지 가지 않은 상황이라면...
+                        {
+                            if (PhotonNetwork.IsMasterClient == true)
+                            {
+                                SendGState(GameState.GS_Ready);
+
+                                if (rowTm1 == 0)
+                                {
+                                    if (-99999.0f < m_ChekWinTime) //한번만 ++ 시키기 위한 용도
+                                    {
+                                        m_Team2Win++;  //여러번 발생하더라도 아직은 업데이트가 안된 상태이기 때문에 이전 값에서 추가될 것이다.
+                                        IsRoomBuf_Team2Win = m_Team2Win;
+                                        m_ChekWinTime = -150000.0f;  
+                                    }
+                                    SendTeam2Win(IsRoomBuf_Team2Win);                                    
+                                }
+                                if (rowTm2 == 0)
+                                {
+                                    if (-99999.0f < m_ChekWinTime) //한번만 ++ 시키기 위한 용도
+                                    {
+                                        m_Team1Win++;
+                                        IsRoomBuf_Team1Win = m_Team1Win;
+                                        m_ChekWinTime = -150000.0f;
+                                    }
+                                    SendTeam1Win(IsRoomBuf_Team1Win);
+                                }
+
+                            }//if (PhotonNetwork.IsMasterClient == true)  
+
+                            m_GoWaitGame = 4.0f; //다시 4초후에 게임이 시작되도록...
+
+                            // 미니맵 생성 초기화
+                            MiniMap.gameObject.SetActive(false);
+                            isMiniMapActive = false;
+                            MiniMapTimeCount = 0;
+
+                        }//if ((m_Team1Win + m_Team2Win) < 5) //아직 5Round까지 가지 않은 상황이라면...
+                    }//if (rowTm1 == 0 || rowTm2 == 0) //양 팀중에 한팀이 전멸했다면....
+                }//if (0 < a_Tm1Count && 0 < a_Tm2Count)
+            }// if (m_ChekWinTime <= 0.0f)
+        }//if (m_GameState == GameState.GS_Playing) 
+
+        // 승리 카운트 텍스트 수정
+        if (m_BlueTeamWin != null)
+            m_BlueTeamWin.text = m_Team1Win.ToString() + "승";
+        if (m_RedTeamWin != null)
+            m_RedTeamWin.text = m_Team2Win.ToString() + "승";
+
+        if (5 <= (m_Team1Win + m_Team2Win)) //아직 5Round까지 모두 플레이된 상황이라면... 
+        {
+            //Game Over 처리
+            if (PhotonNetwork.IsMasterClient == true)
+            {
+                //누가 발생시켰든 동기화 시키려고 하면....
+                SendGState(GameState.GS_GameEnd); //<--- 여기서는 지금 룸을 의미함
+
+            }
+
+            if (m_GameEndText != null)
+            {
+                m_GameEndText.gameObject.SetActive(true);
+                if (m_Team2Win < m_Team1Win)
+                {
+                    m_GameEndText.text = "<color=Blue>" + "블루팀 승리"+"</color>";
+                }
+                else if (m_Team1Win < m_Team2Win)
+                {
+                    m_GameEndText.text = "<color=Red>" + "레드팀 승리"+ "</color>";
+                }
+            }
+
+            return;
+        }
+        //------------------- 승리 / 패배 체크
+
+        //-------------- 한 Round가 끝나고 다은 Round의 게임을 시작 시키기 위한 부분... //모든탱크 GS_Ready 상태일 때 모든 탱크 대기 상태로 만들기...
+        if (m_OldState != GameState.GS_Ready && m_GameState == GameState.GS_Ready)
+        {
+            GameObject[] tanks = GameObject.FindGameObjectsWithTag("TANK");
+            foreach (GameObject tank in tanks)
+            {
+                TankDamage tankDamage = tank.GetComponent<TankDamage>();
+                if (tankDamage != null)
+                    tankDamage.ReadyStateTank(); //다음 라운드 준비 --> 1
+            }
+        }
+        m_OldState = m_GameState;
+        //-------------- 한 Round가 끝나고 다은 Round의 게임을 시작 시키기 위한 부분... 
+    }//void WinLoseObserver()
     
+    
+    //자리 배정 함수
+    void SitPosInxMasterCtrl()
+    {
+        //if (PhotonNetwork.IsMasterClient == false)
+        //    return;  //상위에서 확인하고 있음
+
+        int a_Tm1Count = 0;
+        int a_Tm2Count = 0;
+        string a_TeamKind = "blue";
+        foreach (Player _player in PhotonNetwork.PlayerList) //using Photon.Realtime;
+        {
+            if (_player.CustomProperties.ContainsKey("MyTeam") == true)
+                a_TeamKind = (string)_player.CustomProperties["MyTeam"];
+
+            if (a_TeamKind == "blue")
+            {
+                SitPosInxProps.Clear();
+                SitPosInxProps.Add("SitPosInx", a_Tm1Count);
+                _player.SetCustomProperties(SitPosInxProps);
+                a_Tm1Count++;
+            }
+            else if (a_TeamKind == "red")
+            {
+                SitPosInxProps.Clear();
+                SitPosInxProps.Add("SitPosInx", a_Tm2Count);
+                _player.SetCustomProperties(SitPosInxProps);
+                a_Tm2Count++;
+            }
+        }
+    }//void SitPosInxMasterCtrl()
+
+    
+    #region --------------- Team1 Win Count
+    void InitTeam1WinProps()
+    {
+        if (PhotonNetwork.CurrentRoom == null)
+            return;
+
+        m_Team1WinProps.Clear();
+        m_Team1WinProps.Add("Team1Win", 0);
+        PhotonNetwork.CurrentRoom.SetCustomProperties(m_Team1WinProps);
+    }
+
+    void SendTeam1Win(int a_WinCount)
+    {
+        //if (PhotonNetwork.CurrentRoom == null)
+        //    return;   //Update에서 체크 하고 있다.
+
+        //if (PhotonNetwork.IsMasterClient == false) //마스터만 보낸다.
+        //    return;   //Update에서 체크 하고 있다.
+
+        if (m_Team1WinProps == null)
+        {
+            m_Team1WinProps = new ExitGames.Client.Photon.Hashtable();
+            m_Team1WinProps.Clear();
+        }
+
+        if (m_Team1WinProps.ContainsKey("Team1Win") == true)
+            m_Team1WinProps["Team1Win"] = a_WinCount;
+        else
+            m_Team1WinProps.Add("Team1Win", a_WinCount);
+
+        PhotonNetwork.CurrentRoom.SetCustomProperties(m_Team1WinProps);
+    }
+    #endregion  //--------------- Team1 Win Count
+
+    #region --------------- Team2 Win Count
+    void InitTeam2WinProps()
+    {
+        if (PhotonNetwork.CurrentRoom == null)
+            return;
+
+        m_Team2WinProps.Clear();
+        m_Team2WinProps.Add("Team2Win", 0);
+        PhotonNetwork.CurrentRoom.SetCustomProperties(m_Team2WinProps);
+    }
+
+    void SendTeam2Win(int a_WinCount)
+    {
+        //if (PhotonNetwork.CurrentRoom == null)
+        //    return;   //Update에서 체크 하고 있다.
+
+        //if (PhotonNetwork.IsMasterClient == false) //마스터만 보낸다.
+        //    return;   //Update에서 체크 하고 있다.
+
+        if (m_Team2WinProps == null)
+        {
+            m_Team2WinProps = new ExitGames.Client.Photon.Hashtable();
+            m_Team2WinProps.Clear();
+        }
+
+        if (m_Team2WinProps.ContainsKey("Team2Win") == true)
+            m_Team2WinProps["Team2Win"] = a_WinCount;
+        else
+            m_Team2WinProps.Add("Team2Win", a_WinCount);
+
+        PhotonNetwork.CurrentRoom.SetCustomProperties(m_Team2WinProps);
+    }
+    #endregion  //--------------- Team2 Win Count
+
     
 ```
     
