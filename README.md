@@ -17,7 +17,7 @@
 https://user-images.githubusercontent.com/63942174/158361325-c7fa9025-d939-433f-93c3-f8e82386f4a0.mp4
 
 <details>
-    <summary>접기/펼치기</summary>
+    <summary>포톤 클라우드 서버 접속과 방생성을 위한 코드</summary>
 
 
 ``` C#
@@ -120,8 +120,18 @@ void Awake()
 
 https://user-images.githubusercontent.com/63942174/158361351-8a318f42-bbbd-47c3-8636-2c99131d8c59.mp4
 
+  
+<details>  
+    <summary>랜덤방 입장</summary>
 
-
+    ```C#
+    
+    
+    ```
+    
+ </details>  
+    
+    
 ## 3.볼륨조절  
 
 https://user-images.githubusercontent.com/63942174/158361437-9871a9f5-b60e-4c03-8db9-059c4a164ae2.mp4
