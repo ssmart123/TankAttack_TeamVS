@@ -848,27 +848,972 @@ https://user-images.githubusercontent.com/63942174/158361614-af9bfcd3-866e-4320-
 
 https://user-images.githubusercontent.com/63942174/158361758-0b3e8f61-7d3b-408e-a889-6ef53706b9a1.mp4
 
-*  
+
 <details>  
-    <summary>랜덤방 입장</summary>
+    <summary>적을 향해 공격을 할 시 실행되는 스크립트(FireCannon)</summary>
 
 ```C#
     
+     void Awake()
+    {
+        //cannon 프리팹을 Resources 폴더에서 불러와 변수에 할당
+        cannon = (GameObject)Resources.Load("cannon");
+
+        //포탄 발사 사운드 파일을 Resources 폴더에서 불러와 변수에 할당
+        fireSfx = Resources.Load<AudioClip>("CannonFire");
+        //AudioSource 컴포넌트를 할당
+        sfx = GetComponent<AudioSource>();
+
+        //PhotonView 컴포넌트를 pv 변수에 할당
+        pv = GetComponent<PhotonView>();
+
+        tankDamage = this.GetComponent<TankDamage>();
+    }
+
+    // Update is called once per frame
+    void Update()
+    {
+
+        //마우스 왼쪽 버튼 클릭 시 발사 로직 수행
+        if (pv.IsMine && Input.GetMouseButtonDown(0))
+        {
+            // 마우스가 UI위에 있을시 못쏘게
+            if (!EventSystem.current.IsPointerOverGameObject())
+            {
+                if (tankDamage != null)
+                {
+                    if (GameMgr.m_GameState != GameState.GS_Playing)
+                        return;  //못쏘게...
+
+                    if (tankDamage.currHp <= 0)  //죽었으면 못쏘게...
+                        return;
+
+                    if (0.0f < tankDamage.m_ReSetTime)
+                        return;
+                }
+
+                Fire();
+
+                //원격 네트워크 플레이어의 탱크에 RPC로 원격 Fire 함수를 호출
+                pv.RPC("Fire", RpcTarget.Others, null);
+            }
+        }
+    }
+
+
+    [PunRPC]
+    void Fire()
+    {
+        //발사 사운드 발생
+        sfx.PlayOneShot(fireSfx);
+
+        PlaySound();
+
+        GameObject _cannon = Instantiate(cannon, firePos.position, firePos.rotation);
+        _cannon.GetComponent<Cannon>().AttackerId = pv.Owner.ActorNumber; //ownerId;
+        if (pv.Owner.CustomProperties.ContainsKey("MyTeam") == true)
+        {
+            _cannon.GetComponent<Cannon>().AttackerTeam
+                = (string)pv.Owner.CustomProperties["MyTeam"];
+        }
+    }
+
+    // 발사시 사운드 설정
+    private void PlaySound()
+    {
+        bool a_SoundOnOff = System.Convert.ToBoolean(PlayerPrefs.GetInt("SoundOnOff"));
+        float a_SoundVolum = PlayerPrefs.GetFloat("SoundVolume");
+
+        sfx.mute = !a_SoundOnOff;
+        sfx.volume = a_SoundVolum;
+    }
+}
+```
+    
+ </details>  
+    
+      
+<details>  
+    <summary>탱크가 공격을 받았을 때 스크립트(TankDamage)</summary>
+
+```C#
+     [HideInInspector] public PhotonView pv = null;
+
+    //탱크 폭파 후 투명 처리를 위한 MeshRenderer 컴포넌트 배열
+    private MeshRenderer[] renderers;
+
+    //탱크 폭발 효과 프리팹을 연결할 변수
+    private GameObject expEffect = null;
+
+    //탱크의 초기 생명치
+    private int initHp = 200;
+    //탱크의 현재 생명치
+    int IsMineBuf_CurHp = 0; //IsMine 경우에만 사용될 변수
+    public int currHp = 0;
+    int m_OldcurHp = 0;
+
+    //탱크 하위의 Canvas 객체를 연결할 변수
+    public Canvas hudCanvas;
+    //Filled 타입의 Image UI 항목을 연결할 변수
+    public Image hpBar;
+
+    //플레이어 Id를 저장하는 변수
+    public int playerId = -1;
+
+    //적 탱크 파괴 스코어를 저장하는 변수
+    int IsMineBuf_killCount = 0; //IsMine 경우에만 사용될 변수
+    public int killCount = 0;    //모든 PC의 내 탱크들의 변수
+
+    //탱크 HUD에 표현할 스코어 Text UI 항목
+    public Text txtKillCount;
+
+    ExitGames.Client.Photon.Hashtable CurrHpProps
+                        = new ExitGames.Client.Photon.Hashtable();
+
+    ExitGames.Client.Photon.Hashtable KillProps
+                        = new ExitGames.Client.Photon.Hashtable();
+
+    [HideInInspector] public float m_ReSetTime = 0.0f;   //부활시간딜레이
+    //시작후에도 딜레이 주기 10초동안
+
+    void Awake()
+    {
+        //PhotonView 컴포넌트 할당
+        pv = GetComponent<PhotonView>();
+
+        //탱크 모델의 모든 Mesh Renderer 컴포넌트를 추출한 후 배열에 할당
+        renderers = GetComponentsInChildren<MeshRenderer>();
+
+        //현재 생명치를 초기 생명치로 초깃값 설정
+        IsMineBuf_CurHp = initHp;
+        currHp = initHp;
+        m_OldcurHp = initHp;
+
+        //탱크 폭발 시 생성시킬 폭발 효과를 로드
+        expEffect = Resources.Load<GameObject>("ExplosionMobile");
+
+        //Filled 이미지 색상을 녹색으로 설정
+        hpBar.color = Color.green;
+    }
+
+    // Start is called before the first frame update
+    void Start()
+    {
+        InitCustomProperties(pv);
+
+        //PhotonView의 ownerId를 PlayerId에 저장
+        //pv.ownerId -> pv.Owner.ActorNumber 
+        playerId = pv.Owner.ActorNumber;
+
+        // ReadyStateTank();
+    }
+
+    int a_UpdateCk = 2;
+    //// Update is called once per frame
+    void Update()
+    {
+        if (0 < a_UpdateCk)
+        {
+            a_UpdateCk--;
+            if(a_UpdateCk <= 0)
+            {
+                //이 부분은 탱크가 처음 방에 입장할 때 한번만 호출하게 하기 위한 부분
+                //우선 탱크의 상태를 파괴된 이후처럼.. 
+                //보이지 않게 하고 모두 Ready상태가 되었을 때 시작하게 한다. 
+                ReadyStateTank();
+                //이상하게 모든 Update를 돌고난 후에 적용해야 UI가 깨지지 않는다.
+                //(탱크 생성시 처음 한번만 발생되도록 한다.)
+            }
+        }//if (0 < a_UpdateCk)
+
+        ReceiveCurHp();
+
+        ReceiveKillCount();
+
+        if (0.0f < m_ReSetTime)
+            m_ReSetTime -= Time.deltaTime;
+
+    }// void Update()
+
+    void OnTriggerEnter(Collider coll)
+    {
+        if(coll.gameObject.tag == "CANNON")
+        {
+            Cannon a_RefCanon = coll.GetComponent<Cannon>();
+            if (a_RefCanon == null)
+                return;
+
+            //자기가 쏜 총알이면 충돌 제외
+            if (playerId == a_RefCanon.AttackerId)
+                return;
+
+            //if (pv.IsMine == true)
+            //{
+                TakeDamage(a_RefCanon.AttackerId, a_RefCanon.AttackerTeam);
+            //}
+        }//if(coll.gameObject.tag == "CANNON")
+    }
+
+    public void TakeDamage(int AttackerId, string a_AttTeam = "blue")
+    {
+        if (pv.IsMine == false)  //위의 함수 호출 부분에서 체크하고 있음
+            return;
+        //위 조건을 통과했다는 건 내 실행파일에서 스폰시키고 조정하고 있는 
+        //탱크일때만 처리하겠다는 뜻
+
+        if (0.0f < m_ReSetTime)  //게임 시작 후 10초 동안 딜레이 주기
+            return;
+
+        //나중에 따라가는 값이니까 이것도 죽어 있는 상태면 아직 데미지 차감 대기 해야함
+        if (currHp <= 0)  
+            return;
+
+        string a_DamageTeam = "blue";
+        if (pv.Owner.CustomProperties.ContainsKey("MyTeam") == true)
+            a_DamageTeam = (string)pv.Owner.CustomProperties["MyTeam"];
+
+        //지금 데미지를 받는 탱크가 AttackerId 공격자 팀과 다른 팀일때만 데미지가 들어가도록 처리
+        if (a_AttTeam == a_DamageTeam)
+            return;
+
+        if (0 < IsMineBuf_CurHp)
+        {
+            //if (AttackerId == playerId) //자기가 쏜 총알은 자신이 맞으면 안되기 때문에...
+            //    return; //위의 함수 호출 부분에서 체크하고 있음
+
+            IsMineBuf_CurHp -= 20;
+            if (IsMineBuf_CurHp < 0)
+                IsMineBuf_CurHp = 0;
+
+            int a_DamPlayerID = -1; //평타
+            if (IsMineBuf_CurHp <= 0)  // 막타
+            {
+                a_DamPlayerID = AttackerId;
+            }
+
+            SendCurHp(IsMineBuf_CurHp, a_DamPlayerID);  //브로드 케이팅 
+            //<-- 이걸 해 줘야 브로드 케이팅 된다.
+
+        }//if (0 < IsMineBuf_CurHp)
+    }//public void TakeDamage(int AttackerId)
+
+    //폭발 효과 생성 및 리스폰 코루틴 함수
+    IEnumerator ExplosionTank()
+    {
+        //폭발 효과 생성
+        if (5.0f < Time.time) //게임 시작 후 5초가 지난다음에 이펙트 터지도록.... 
+        //게임이 시작하자마자 기존에 죽어 있는 애들 이펙트가 터지니까 이상하다.
+        {
+            Object effect = GameObject.Instantiate(expEffect,
+                                    transform.position, Quaternion.identity);
+
+            Destroy(effect, 3.0f);
+        }
+
+        //HUD를 비활성화
+        hudCanvas.enabled = false;
+
+        //탱크 투명 처리
+        SetTankVisible(false);
+
+        yield return null;
+    }
+
+    void SetTankVisible(bool isVisible)
+    {
+        foreach (MeshRenderer _renderer in renderers)
+        {
+            _renderer.enabled = isVisible;
+        }
+
+        Rigidbody[] a_Rigidbody = this.GetComponentsInChildren<Rigidbody>(true);
+        foreach (Rigidbody _Rigidbody in a_Rigidbody)
+        {
+            _Rigidbody.isKinematic = !isVisible;
+        }
+
+        BoxCollider[] a_BoxColls = this.GetComponentsInChildren<BoxCollider>(true);
+        foreach (BoxCollider _BoxColl in a_BoxColls)
+        {
+            _BoxColl.enabled = isVisible;
+        }
+    }
+
+    //자신을 파괴시킨 적 탱크를 검색해 스코어를 증가시키는 함수
+    //firePlayerId : Kill 수를 증가 시키기 위한 탱크 ID 캐릭터 찾아오기
+    void SaveKillCount(int firePlayerId)
+    {
+        //TAKE 태그를 지정된 모든 탱크를 가져와 배열에 저장
+        GameObject[] tanks = GameObject.FindGameObjectsWithTag("TANK");
+        foreach (GameObject tank in tanks)
+        {
+            var tankDamage = tank.GetComponent<TankDamage>();
+            //탱크의 playerId가 포탄의 playerId와 동일한지 판단
+            if (tankDamage != null && tankDamage.playerId == firePlayerId)
+            {
+                //동일한 탱크일 경우 스코어를 증가시킴
+                tankDamage.IncKillCount();
+                return;
+            }
+        }
+    }//void SaveKillCount(int firePlayerId)
+
+    void IncKillCount() //때린 탱크 입장으로 호출됨
+    {
+        if (pv != null && pv.IsMine == true)
+        {
+            IsMineBuf_killCount++;
+
+            SendKillCount(IsMineBuf_killCount);
+            //브로드 케이팅 <--//이걸 해 줘야 브로드 케이팅 된다.
+        }//if (pv != null && pv.IsMine == true)
+    }//void IncKillCount()
+
+    public void ReadyStateTank()
+    {
+        if (GameMgr.m_GameState != GameState.GS_Ready)
+            return;
+  
+        //-------마스터 기준으로 한번만 탱크 리스폰 자리를 정해준다.
+
+        StartCoroutine(this.WaitReadyTank());
+    }
+
+    //게임 시작 대기...
+    IEnumerator WaitReadyTank()
+    {
+        //HUD를 비활성화
+        hudCanvas.enabled = false;
+
+        //탱크 투명 처리
+        SetTankVisible(false);
+
+        while (GameMgr.m_GameState == GameState.GS_Ready)
+        {
+            yield return null;
+        }
+
+        //탱크 특정한 위치에 리스폰되도록...
+        //--------- 탱크 특정한 위치에 리스폰되도록...
+        //위치 고정 필요...
+        float pos = Random.Range(-100.0f, 100.0f);
+        Vector3 a_SitPos = new Vector3(pos, 20.0f, pos);
+
+        string a_TeamKind = "blue";
+        if (pv.Owner.CustomProperties.ContainsKey("MyTeam") == true)
+            a_TeamKind = (string)pv.Owner.CustomProperties["MyTeam"];
+
+        if (a_TeamKind == "blue")
+        {
+            if (pv.Owner.CustomProperties.ContainsKey("SitPosInx") == true) 
+            {
+                int a_SitPosInx = (int)pv.Owner.CustomProperties["SitPosInx"];
+                if (0 <= a_SitPosInx && a_SitPosInx < 4)
+                {
+                    a_SitPos = GameMgr.m_Team1Pos[a_SitPosInx];
+                    this.gameObject.transform.eulerAngles = 
+                                            new Vector3(0.0f, 201.0f, 0.0f);
+                }
+            }
+        }
+        else if (a_TeamKind == "black")
+        {
+            if (pv.Owner.CustomProperties.ContainsKey("SitPosInx") == true)
+            {
+                int a_SitPosInx = (int)pv.Owner.CustomProperties["SitPosInx"];
+                if (0 <= a_SitPosInx && a_SitPosInx < 4)
+                {
+                    a_SitPos = GameMgr.m_Team2Pos[a_SitPosInx];
+                    this.gameObject.transform.eulerAngles = 
+                                            new Vector3(0.0f, 19.5f, 0.0f);
+                }
+            }
+        }
+
+        this.gameObject.transform.position = a_SitPos;
+        m_ReSetTime = 10.0f; //게임 시작후에도 딜레이 주기
+        //--------- 탱크 특정한 위치에 리스폰되도록...
+
+
+        //Filled 이미지 초깃값으로 환원
+        hpBar.fillAmount = 1.0f;
+        //Filled 이미지 색상을 녹색으로 설정
+        hpBar.color = Color.green;
+        //HUD 활성화
+        hudCanvas.enabled = true;
+
+        if (pv != null && pv.IsMine == true)
+        {
+            //리스폰 시 생명 초깃값 설정
+            IsMineBuf_CurHp = initHp;
+
+            SendCurHp(IsMineBuf_CurHp, -1); // 브로드 케이팅
+        }
+
+        //탱크를 다시 보이게 처리
+        SetTankVisible(true);
+    }
+
+
+    #region --------------- CustomProperties 초기화
+    void InitCustomProperties(PhotonView pv)
+    { //속도를 위해 버퍼를 미리 만들어 놓는다는 의미
+        //pv.IsMine == true 내가 조정하고 있는 탱크이고 스폰시점에...
+        if (pv != null && pv.IsMine == true)
+        {
+            CurrHpProps.Clear();
+            CurrHpProps.Add("curHp", IsMineBuf_CurHp);
+            CurrHpProps.Add("LastAttackerID", -1);
+            pv.Owner.SetCustomProperties(CurrHpProps);
+
+            KillProps.Clear();
+            KillProps.Add("KillCount", 0);
+            pv.Owner.SetCustomProperties(KillProps);
+        }
+    }
+    #endregion  //--------------- CustomProperties 초기화
+
+
+    #region --------------- Hp Sync
+    //--------------- Send CurHp
+    void SendCurHp(int CurHP = 200, int a_LAtt_ID = -1)
+    {
+        if (pv == null)
+            return;
+
+        if (pv.IsMine == false)
+            return;
+        //내가 조정하고 있는 탱크 입장에서만 보낸다.
+        //(즉 내가 조정하는 탱크를 기준으로만 동기화를 맞춘다.)
+
+        if (CurrHpProps == null)
+        {
+            CurrHpProps = new ExitGames.Client.Photon.Hashtable();
+            CurrHpProps.Clear();
+        }
+
+        //자기 탱크의 저장 공간의 값을 갱신해서 브로드 케이팅
+        if (CurrHpProps.ContainsKey("curHp") == true) //모든 캐릭터의 에너지바 동기화
+        {
+            CurrHpProps["curHp"] = CurHP;
+        }
+        else
+        {
+            CurrHpProps.Add("curHp", CurHP);
+        }
+
+        //내가 죽을 때 막타를 친 유저를 찾아서 킬수를 올려주려고...
+        if (CurrHpProps.ContainsKey("LastAttackerID") == true)
+        {
+            CurrHpProps["LastAttackerID"] = a_LAtt_ID;
+        }
+        else
+        {
+            CurrHpProps.Add("LastAttackerID", a_LAtt_ID);
+        }
+
+        pv.Owner.SetCustomProperties(CurrHpProps);  //브로드 케이팅 
+    }//void SendCurHp(int CurHP = 200, int a_LAtt_ID = -1)
+    //--------------- Send CurHp
+
+    //--------------- Receive CurHp
+    void ReceiveCurHp() //CurHp 받아서 처리하는 부분
+    {
+        if (pv == null)
+            return;
+
+        if (pv.Owner == null)
+            return;
+
+        if (pv.Owner.CustomProperties.ContainsKey("curHp") == true)
+        {//모든 캐릭터의 에너지바 동기화
+            currHp = (int)pv.Owner.CustomProperties["curHp"];
+
+            //현재 생명치 백분율 = (현재 생명치) / (초기 생명치)
+            hpBar.fillAmount = (float)currHp / (float)initHp;
+
+            //생명 수치에 따라 Filled 이미지의 색상을 변경
+            if (hpBar.fillAmount <= 0.4f)
+                hpBar.color = Color.red;
+            else if (hpBar.fillAmount <= 0.6f)
+                hpBar.color = Color.yellow;
+            else
+                hpBar.color = Color.green;
+
+            if (0 < m_OldcurHp && currHp <= 0)
+            {
+                if (pv.Owner.CustomProperties.ContainsKey("LastAttackerID") == true)
+                {
+                    int a_LastEmID = (int)pv.Owner.CustomProperties["LastAttackerID"];
+                    if (0 <= a_LastEmID)
+                        SaveKillCount(a_LastEmID);
+                    //자신을 파괴시킨 적 탱크의 스코어를 증가시키는 함수를 호출
+                }
+
+                StartCoroutine(this.ExplosionTank());
+            }//if (0 < m_OldcurHp && currHp <= 0)
+
+            m_OldcurHp = currHp;
+        }//if (pv.Owner.CustomProperties.ContainsKey("curHp") == true) 
+    }
+    //--------------- Receive CurHp
+    #endregion  //--------------- Hp Sync
+
+
+    #region --------------- KillCount
+    
+    //--------------- Send KillCount
+    void SendKillCount(int a_KillCount = 0)
+    {
+        if (pv == null)
+            return;
+
+        if (pv.IsMine == false)
+            return;
+
+        if (KillProps == null)
+        {
+            KillProps = new ExitGames.Client.Photon.Hashtable();
+            KillProps.Clear();
+        }
+
+        if (KillProps.ContainsKey("KillCount") == true)
+        {
+            KillProps["KillCount"] = a_KillCount;
+        }
+        else
+        {
+            KillProps.Add("KillCount", a_KillCount);
+        }
+
+        pv.Owner.SetCustomProperties(KillProps);
+    }
+    //--------------- Send KillCount
+
+    //--------------- Receive KillCount
+    void ReceiveKillCount() //KillCount 받아서 처리하는 부분
+    {
+        if (pv == null)
+            return;
+
+        if (pv.Owner == null)
+            return;
+
+        if (pv.Owner.CustomProperties.ContainsKey("KillCount") == true)
+        {
+            int a_KillCnt = (int)pv.Owner.CustomProperties["KillCount"];
+            if (killCount != a_KillCnt)
+            {
+                killCount = a_KillCnt;
+                if (txtKillCount != null)
+                {
+                    txtKillCount.text = killCount.ToString();
+                }
+            }
+        }
+    }
+    //--------------- Receive KillCount
+    #endregion  //--------------- KillCount
     
 ```
     
- </details>  **
+ </details>  
     
-## 8.이동과 카메라 회전  
+## 8.캐릭터 조작과 카메라 회전  
 
 https://user-images.githubusercontent.com/63942174/158361799-9cb3bf1c-8fa2-49ba-9935-400b23727e87.mp4
 
       
 <details>  
-    <summary>랜덤방 입장</summary>
+    <summary>탱크 이동 관련 스크립트(TankMove)</summary>
+
+```C#
+    public class TankMove : MonoBehaviourPunCallbacks, IPunObservable
+{
+    //PhotonView 컴포넌트를 할당할 변수
+    private PhotonView pv = null;
+    //메인 카메라가 추적할 CamPivot 게임오브젝트
+    public Transform camPivot;
+
+    //탱크의 이동 및 회전 속도를 나타내는 변수
+    public float moveSpeed = 20.0f;
+    public float rotSpeed = 50.0f;
+
+    //참조할 컴포넌트를 할당할 변수
+    [HideInInspector] public Rigidbody rbody;
+    [HideInInspector] public Transform tr;
+
+    //키보드 입력값 변수
+    private float h, v;
+
+    Vector3 a_CacPos = Vector3.zero;
+
+    //위치 정보를 송수신할 때 사용할 변수 선언 및 초깃값 설정
+    private Vector3 currPos = Vector3.zero;
+    private Quaternion currRot = Quaternion.identity;
+
+    TankDamage tankDamage = null;
+    
+    
+    //------------ 탱크끼리 구충돌로 밀리게 하기 코드 부분
+    float a_Radius = 8.5f;
+    GameObject[] a_tanks = null;
+    Vector3 a_fCacDist = Vector3.zero;
+    float a_CacDistLen = 0.0f;
+    float a_ShiftLen = 0.0f;
+    TankDamage a_TkDamage = null;
+
+    void Awake()
+    {
+        //컴포넌트 할당
+        rbody = GetComponent<Rigidbody>();
+        tr = GetComponent<Transform>();
+
+        //PhotonView 컴포넌트 할당
+        pv = GetComponent<PhotonView>();
+        pv.ObservedComponents[0] = this;
+                
+              
+        //유저가 조정하고 있는 로컬에서 만들어진 탱크의 PhotonView일 경우
+        if (pv.IsMine)
+        {
+            //메인 카메라에 추가된 SmoothFollow 스크립트에 추적 대상을 연결
+            Camera.main.GetComponent<SmoothFollow>().target = camPivot;
+        }  
+    
+        //원격 탱크의 위치 및 회전 값을 처리할 변수의 초깃값 설정
+        currPos = tr.position;
+        currRot = tr.rotation;
+
+        tankDamage = this.GetComponent<TankDamage>();
+    
+    void Start()
+    {
+
+        if (!pv.IsMine) //내가 조정하고 있는 탱크가 아닌 경우
+        {
+            //원격 네트워크 플레이어의 탱크는 물리력을 이용하지 않음
+            rbody.isKinematic = true;
+        }
+
+        //Rigidbody의 무게중심을 낮게 설정
+        rbody.centerOfMass = new Vector3(0.0f, -2.5f, 0.0f);
+    }
+
+
+    // Update is called once per frame
+    void Update()
+    {
+        if (pv.IsMine) //내가 로컬에서 만든 탱크인 경우에만 조정이 가능하게 한다.
+        {
+            if (GameMgr.m_GameState != GameState.GS_Playing)
+                return;
+
+            if (tankDamage != null)
+            {
+                if (tankDamage.currHp <= 0)
+                    return;
+            }
+
+            h = Input.GetAxis("Horizontal");
+            v = Input.GetAxis("Vertical");
+
+            //회전과 이동처리
+            tr.Rotate(Vector3.up * rotSpeed * h * Time.deltaTime);
+            tr.Translate(Vector3.forward * v * moveSpeed * Time.deltaTime);
+            //Default 값 Space.Self
+
+            //------------탱크끼리 구충돌로 밀리게 해서 물리엔진이 발동하지 않게 하기...
+            a_tanks = GameObject.FindGameObjectsWithTag("TANK");
+            foreach (GameObject tank in a_tanks)
+            {
+                if (this.gameObject == tank)
+                    continue;
+
+                a_TkDamage = tank.GetComponent<TankDamage>();
+                if (a_TkDamage == null)
+                    continue;
+
+                if (a_TkDamage.currHp <= 0)
+                    continue;
+
+                a_fCacDist = tr.position - tank.transform.position;
+
+                if (a_fCacDist.y < 0.0f)
+                    a_fCacDist.y = 0.0f;
+                a_CacDistLen = a_fCacDist.magnitude;
+                if (a_CacDistLen < (a_Radius + a_Radius))
+                {
+                    a_ShiftLen = 15.0f * Time.deltaTime;
+                    tr.position = tr.position + (a_fCacDist.normalized * a_ShiftLen);
+                }
+            }
+            //------------탱크끼리 구충돌로 밀리게 해서 물리엔진이 발동하지 않게 하기...
+
+            //------------탱크가 지형을 벗어나지 못하게 막기...
+            a_CacPos = tr.position;
+                                            
+            if (245.0f < tr.position.x)
+            {
+                a_CacPos.x = 245.0f;
+            }
+            if (245.0f < tr.position.z)
+            {
+                a_CacPos.z = 245.0f;
+            }
+            if (tr.position.x < -245.0f)
+            {
+                a_CacPos.x = -245.0f;
+            }
+            if (tr.position.z < -245.0f)
+            {
+                a_CacPos.z = -245.0f;
+            }
+            tr.position = a_CacPos;
+            //------------탱크가 지형을 벗어나지 못하게 막기...
+        }// if (pv.IsMine)
+        else //원격으로 만들어진 탱크들...
+        { //좌표를 중계 받아 움직일 것임
+
+            if (10.0f < (tr.position - currPos).magnitude)
+            {
+                tr.position = currPos;
+            }
+            else
+            {
+                //원격 플레이어의 탱크를 수신받은 위치까지 부드럽게 이동시킴
+                tr.position = Vector3.Lerp(tr.position, currPos, Time.deltaTime * 10.0f);
+            }
+            //원격 플레이어의 탱크를 수신받은 각도만큼 부트럽게 회전시킴
+            tr.rotation = Quaternion.Slerp(tr.rotation, currRot, Time.deltaTime * 10.0f);
+
+        }//원격에서 만들어진 탱크들...
+    }//void Update()
+    
+      //기본설정은 SendRate 1초 20번, SerializtionRate 1초에 10번으로 알고있습니다.
+    public void OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info)
+    {
+        //로컬 플레이어의 위치 정보 송신
+        if (stream.IsWriting)
+        {
+            stream.SendNext(tr.position);
+            stream.SendNext(tr.rotation);
+        }
+        else //원격 플레이어의 위치 정보 수신
+        {
+            currPos = (Vector3)stream.ReceiveNext();
+            currRot = (Quaternion)stream.ReceiveNext();
+        }
+    }
+}
+
+                                            
+```
+    
+ </details>  
+    
+      
+<details>  
+    <summary>터렛 회전 관련 스크립트(TurretCtrl)</summary>
 
 ```C#
     
+public class TurretCtrl : MonoBehaviourPunCallbacks, IPunObservable
+{
+    private Transform tr;
+    //광선(Ray)이 지면에 맞은 위치를 저장할 변수
+    private RaycastHit hit;
+
+    //터렛의 회전 속도
+    public float rotSpeed = 5.0f;
+
+    //PhotonView 컴포넌트 변수
+    private PhotonView pv = null;
+    //원격 네트워크 탱크의 터렛 회전값을 저장할 변수
+    private Quaternion currRot = Quaternion.identity;
+
+    void Awake()
+    {
+        tr = GetComponent<Transform>();
+        pv = GetComponent<PhotonView>();
+
+
+        //초기 회전값 설정
+        currRot = tr.localRotation;
+    }
+
+    void Update()
+    {
+        //자신의 탱크일 때만 조정
+        if (pv.IsMine == true)
+        {
+            if (PhotonInit.isFocus == false) //윈도우 창이 비활성화 되어 있다면...
+                return;
+
+            //메인 카메라에서 마우스 커서의 위치로 캐스팅되는 Ray를 생성
+            Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+            //생성된 Ray를 Scene 뷰에 녹색 광선으로 표현
+            Debug.DrawRay(ray.origin, ray.direction * 100.0f, Color.green);
+
+            if (Physics.Raycast(ray, out hit, Mathf.Infinity, 1 << LayerMask.NameToLayer("TERRAIN")))
+            {
+                //Ray에 맞은 위치를 로컬좌표로 변환
+                Vector3 relative = tr.InverseTransformPoint(hit.point);
+                //역탄젠트 함수인 Atan2로 두 점 간의 각도를 계산
+                float angle = Mathf.Atan2(relative.x, relative.z) * Mathf.Rad2Deg;
+                //rotSpeed 변수에 지정된 속도로 회전
+                tr.Rotate(0, angle * Time.deltaTime * rotSpeed, 0);
+            }
+            else
+            {
+                Vector3 a_OrgVec = ray.origin + ray.direction * 2000.0f;
+                ray = new Ray(a_OrgVec, -ray.direction);
+                if (Physics.Raycast(ray, out hit, Mathf.Infinity,
+                                            1 << LayerMask.NameToLayer("TURRETPICKOBJ")))
+                {
+                    //Ray에 맞은 위치를 로컬좌표로 변환
+                    Vector3 relative = tr.InverseTransformPoint(hit.point);
+                    //역탄젠트 함수인 Atan2로 두 점 간의 각도를 계산
+                    float angle = Mathf.Atan2(relative.x, relative.z) * Mathf.Rad2Deg;
+                    //rotSpeed 변수에 지정된 속도로 회전
+                    tr.Rotate(0, angle * Time.deltaTime * rotSpeed, 0);
+                }
+            } //else
+
+        }//  if (pv.IsMine == true)
+        else //원격 네트워크 플레이어의 탱크일 경우
+        {
+            //현재 회전각도에서 수신받은 실시간 회전각도로 부드럽게 회전
+            tr.localRotation = Quaternion.Slerp(tr.localRotation, currRot, Time.deltaTime * 10.0f);
+        }
+    } //void Update()
+
+    public void OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info)
+    {
+        //로컬 플레이어의 위치 정보 송신
+        if (stream.IsWriting)
+        {
+            stream.SendNext(tr.localRotation);
+        }
+        else //원격 플레이어의 위치 정보 수신
+        {
+            currRot = (Quaternion)stream.ReceiveNext();
+        }
+    }
+
+}
+    
+```
+    
+ </details>  
+    
+    
+<details>  
+    <summary>포신 컨트롤 관련 스크립트(CannonCtrl)</summary>
+
+```C#
+    
+public class CannonCtrl : MonoBehaviourPunCallbacks, IPunObservable
+{
+    private Transform tr;
+    public float rotSpeed = 5.0f;
+
+    private RaycastHit hit;
+
+    private PhotonView pv = null;
+
+    //원격 네트워크 탱크의 포신 회전 각도를 저장할 변수
+    private Quaternion currRot = Quaternion.identity;
+
+    // Start is called before the first frame update
+    void Awake()
+    {
+        tr = GetComponent<Transform>();
+        pv = GetComponent<PhotonView>();
+
+        //초기 회전값 설정
+        currRot = tr.localRotation;
+    }
+
+    // Update is called once per frame
+    void Update()
+    {
+        //자신이 만든 네트워크 게임오브젝트가 아닌 경우는 키보드 조작 루틴을 나감
+        if (pv.IsMine)
+        {
+            if (PhotonInit.isFocus == false) //윈도우 창이 비활성화 되어 있다면...
+                return;
+
+            //tr.Rotate(angle, 0, 0);
+
+            //메인 카메라에서 마우스 커서의 위치로 캐스팅되는 Ray를 생성
+            Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+
+            if (Physics.Raycast(ray, out hit, Mathf.Infinity, 1 << LayerMask.NameToLayer("TERRAIN")))
+            {
+                Vector3 a_CacVec = hit.point - tr.position;
+                Quaternion a_rotate = Quaternion.LookRotation(a_CacVec.normalized);
+                a_rotate.eulerAngles = new Vector3(a_rotate.eulerAngles.x, tr.eulerAngles.y,
+                                        tr.eulerAngles.z);
+                tr.rotation = Quaternion.Slerp(tr.rotation, a_rotate, Time.deltaTime * 10.0f);
+
+                tr.localEulerAngles = new Vector3(tr.localEulerAngles.x, 0.0f, 0.0f);
+            }
+            else
+            {
+                Vector3 a_OrgVec = ray.origin + ray.direction * 2000.0f;
+                ray = new Ray(a_OrgVec, -ray.direction);
+                if (Physics.Raycast(ray, out hit, Mathf.Infinity,
+                                                        1 << LayerMask.NameToLayer("TURRETPICKOBJ")))
+                {
+                    Vector3 a_CacVec = hit.point - tr.position;
+                    Quaternion a_rotate = Quaternion.LookRotation(a_CacVec.normalized);
+                    a_rotate.eulerAngles = new Vector3(a_rotate.eulerAngles.x, tr.eulerAngles.y,
+                                            tr.eulerAngles.z);
+                    tr.rotation = Quaternion.Slerp(tr.rotation, a_rotate, Time.deltaTime * 10.0f);
+
+                    tr.localEulerAngles = new Vector3(tr.localEulerAngles.x, 0.0f, 0.0f);
+                }
+            }
+
+            //포신 각도 제한...
+            Vector3 a_Angle = tr.localEulerAngles;
+            if (a_Angle.x < 180.0f)   //포신 각도를 내려가려는 경우
+            {
+                if (5.0f < a_Angle.x)
+                    a_Angle.x = 5.0f;
+            }
+            else                      //포신 각도를 올리려는 경우
+            {
+                if (a_Angle.x < 330.0f)  //값을 더 줄이면 각도가 제한이 더된다.
+                    a_Angle.x = 330.0f;
+            }
+
+            tr.localEulerAngles = a_Angle;
+
+        }//if (pv.IsMine)
+        else
+        {
+            //현재 회전 각도에서 수신받은 실시간 회전 각도로 부드럽게 회전
+            tr.localRotation = Quaternion.Slerp(tr.localRotation, currRot, Time.deltaTime * 10.0f);
+        }
+    }
+
+    //송수신 콜백 함수
+    public void OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info)
+    {
+        //로컬 플레이어의 위치 정보 송신
+        if (stream.IsWriting)
+        {
+            stream.SendNext(tr.localRotation);
+        }
+        else //원격 플레이어의 위치 정보 수신
+        {
+            currRot = (Quaternion)stream.ReceiveNext();
+        }
+    }
+}
+
     
 ```
     
@@ -880,10 +1825,47 @@ https://user-images.githubusercontent.com/63942174/158361902-0618f85d-ab83-44aa-
 
       
 <details>  
-    <summary>랜덤방 입장</summary>
+    <summary>미니맵 관련 스크립트(GameMgr)</summary>
 
 ```C#
     
+    ///  ------미니맵 유저 색깔 바꾸기
+    void ChangeMiniMapTankColor(GameObject[] a_tanks, int ActorNumber, string a_TeamKind)
+    {
+        DisplayUserId a_DpUserId = null;
+
+        foreach (GameObject tank in a_tanks)
+        {
+            a_DpUserId = tank.GetComponent<DisplayUserId>();
+            if (a_DpUserId != null)
+            {
+                if (a_DpUserId.pv.Owner.ActorNumber == ActorNumber)
+                {
+                    if (a_TeamKind == "blue")
+                        a_DpUserId.MiniMapUI.color = new Color32(60, 60, 255, 255);
+                    else
+                        a_DpUserId.MiniMapUI.color = Color.red;
+
+                    break;
+                }//if (a_DpUserId.pv.Owner.ActorNumber == ActorNumber)
+
+            }//if (a_DpUserId != null)
+        }//foreach (GameObject tank in a_tanks)
+    }
+    
+    
+    void MiniMapShow()
+    {
+        // 미니맵 보기 카운트다운 시작
+        MiniMapTimeCount += Time.deltaTime;
+
+        MiniMapCountText.text = ((int)MiniMapTimeCount).ToString();
+
+        if ( MiniMapTimeCount >= MiniMapShowTime)
+        {
+            MiniMap.gameObject.SetActive(true);
+        }
+    }
     
 ```
     
