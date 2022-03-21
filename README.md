@@ -1498,7 +1498,8 @@ https://user-images.githubusercontent.com/63942174/158361758-0b3e8f61-7d3b-408e-
 
 https://user-images.githubusercontent.com/63942174/158361799-9cb3bf1c-8fa2-49ba-9935-400b23727e87.mp4
 
-  탱크의 이동 및 범위제한, 탱크끼리의 충돌범위를 제한한 스크립트입니다. 좌우버튼을 누르면 탱크가 회전하게 되고 카메라가 탱크의 전방을 향하게 천천히 따라갑니다.
+    탱크의 이동 및 범위제한, 탱크끼리의 충돌범위를 제한한 스크립트입니다.  
+    좌우버튼을 누르면 탱크가 회전하게 되고 카메라가 탱크의 전방을 향하게 천천히 따라갑니다.
     
 <details>  
     <summary>탱크 이동 관련 스크립트(TankMove)</summary>
