@@ -112,8 +112,9 @@ void Awake()
         //인자로 전달된 이름에 해당하는 룸으로 입장
         PhotonNetwork.JoinRoom(roomName);
     }
+    
 ```
-</details>
+ </details>
 
 ## 2.랜덤방 입장  
 
