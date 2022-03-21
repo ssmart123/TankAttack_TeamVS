@@ -121,10 +121,10 @@ void Awake()
 
 https://user-images.githubusercontent.com/63942174/158361351-8a318f42-bbbd-47c3-8636-2c99131d8c59.mp4
 
-<h3>Join Random Room 버튼을 누르면 현재 만들어져 있는 임의의 방에 접속하게 된다.</h>
+##### Join Random Room 버튼을 누르면 현재 만들어져 있는 임의의 방에 접속하게 된다.
   
 <details>  
-    <summary>랜덤방 입장</summary>
+    <summary><h3>랜덤방 입장</h></summary>
 
 ```C#
      public override void OnConnectedToMaster()
