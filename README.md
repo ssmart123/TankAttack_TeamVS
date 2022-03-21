@@ -14,8 +14,8 @@
 https://user-images.githubusercontent.com/63942174/158361325-c7fa9025-d939-433f-93c3-f8e82386f4a0.mp4
 
 
-##### 로비화면의 Make Room버튼을 누르면 방을 만들 수 있도록 구현하였다. 만들어진 방은 다른 플레이어들이   
-##### 볼수 있고 방을 클릭하면 해당 방에 접속할 수 있다.  
+    로비화면의 Make Room버튼을 누르면 방을 만들 수 있도록 구현하였다. 만들어진 방은 다른 플레이어들이   
+    볼수 있고 방을 클릭하면 해당 방에 접속할 수 있다.  
 
 
 <details>
@@ -121,7 +121,7 @@ void Awake()
 
 https://user-images.githubusercontent.com/63942174/158361351-8a318f42-bbbd-47c3-8636-2c99131d8c59.mp4
 
-##### Join Random Room 버튼을 누르면 현재 만들어져 있는 임의의 방에 접속하게 된다.
+    Join Random Room 버튼을 누르면 현재 만들어져 있는 임의의 방에 접속하게 된다.
   
 <details>  
     <summary><h3>랜덤방 입장(PhotonInit)</h></summary>
@@ -182,7 +182,7 @@ https://user-images.githubusercontent.com/63942174/158361437-9871a9f5-b60e-4c03-
     사운드 관련 데이터는 PlayerPrefs에 저장하였다.
       
 <details>  
-    <summary>환경설정을 위한 config박스 컨트롤</summary>
+    <summary>환경설정버튼 스크롤과 사운드 옵션 로컬 저장(PhotonInit)</summary>
 
 ```C#
      private void Update()
@@ -228,7 +228,58 @@ https://user-images.githubusercontent.com/63942174/158361437-9871a9f5-b60e-4c03-
 ```
     
  </details>  
+    
+<details>  
+    <summary>ConfigBox 스크립트(ConfigBox)</summary>
+    
+``` C#
+    public class ConfigBox : MonoBehaviour
+{
+    public Button CancleBtn;
+    public Toggle SoundToggle;
+    public Slider VolumeSlider;
 
+    public Button OkBtn;
+
+    private void Start()
+    {
+        if (CancleBtn != null)
+            CancleBtn.onClick.AddListener(()=> { Destroy(this.gameObject); });
+
+        if (SoundToggle != null)
+            SoundToggle.onValueChanged.AddListener(SoundOnOff);
+
+        bool a_SoundOnOff = System.Convert.ToBoolean(PlayerPrefs.GetInt("SoundOnOff"));
+        if (SoundToggle != null)
+            SoundToggle.isOn = a_SoundOnOff;
+
+        if (VolumeSlider != null)
+            VolumeSlider.onValueChanged.AddListener(ValumSliderCheck);
+
+        float a_SoundVolume = PlayerPrefs.GetFloat("SoundVolume");
+        if (VolumeSlider != null)
+            VolumeSlider.value = a_SoundVolume;
+    }
+
+    // 사운드 음소거 관련 함수
+    private void SoundOnOff(bool value)
+    {
+        if (value == true)
+            PlayerPrefs.SetInt("SoundOnOff", 1);
+        else
+            PlayerPrefs.SetInt("SoundOnOff", 0);
+
+    }
+    
+    // 사운드 볼륨 관련 함수
+    private void ValumSliderCheck(float value)
+    {
+        PlayerPrefs.SetFloat("SoundVolume", value);
+    }
+}
+
+```
+ </details>  
 ## 4.팀 이동 및 준비  
 
 https://user-images.githubusercontent.com/63942174/158361475-0e5b83a3-28b5-4035-bcfd-41b239ba9bec.mp4
