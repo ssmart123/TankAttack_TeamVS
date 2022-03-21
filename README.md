@@ -178,8 +178,8 @@ https://user-images.githubusercontent.com/63942174/158361351-8a318f42-bbbd-47c3-
 
 https://user-images.githubusercontent.com/63942174/158361437-9871a9f5-b60e-4c03-8db9-059c4a164ae2.mp4
 
-    ##### 화면의 환경설정버튼을 누르면 숨겨져있던 메뉴가 스크롤되도록 구현하였다.  
-    ##### 사운드 관련 데이터는 PlayerPrefs에 저장하였다.
+    화면의 환경설정버튼을 누르면 숨겨져있던 메뉴가 스크롤되도록 구현하였다.  
+    사운드 관련 데이터는 PlayerPrefs에 저장하였다.
       
 <details>  
     <summary>환경설정을 위한 config박스 컨트롤</summary>
