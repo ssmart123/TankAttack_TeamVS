@@ -16,7 +16,6 @@ https://user-images.githubusercontent.com/63942174/158361325-c7fa9025-d939-433f-
 
     로비화면의 Make Room버튼을 누르면 방을 만들 수 있도록 구현하였다. 만들어진 방은 다른 플레이어들이   
     볼수 있고 방을 클릭하면 해당 방에 접속할 수 있다. 
-    
 <details>
     <summary><h3>포톤 클라우드 서버 접속과 방생성을 위한 코드(PhotonInit)</h></summary>
   
@@ -122,8 +121,8 @@ https://user-images.githubusercontent.com/63942174/158361351-8a318f42-bbbd-47c3-
 
     Join Random Room 버튼을 누르면 현재 만들어져 있는 임의의 방에 접속하게 된다.
   
-<details>  
-    <summary><h3>랜덤방 입장(PhotonInit)</h></summary>
+    <details>  
+        <summary><h3>랜덤방 입장(PhotonInit)</h></summary>
 
 ```C#
      public override void OnConnectedToMaster()
@@ -168,7 +167,7 @@ https://user-images.githubusercontent.com/63942174/158361351-8a318f42-bbbd-47c3-
         yield return ao;
     }
 ```
-</details>  
+    </details>  
     
     
 ## 3.환경설정
