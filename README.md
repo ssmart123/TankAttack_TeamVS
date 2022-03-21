@@ -120,9 +120,8 @@ void Awake()
 https://user-images.githubusercontent.com/63942174/158361351-8a318f42-bbbd-47c3-8636-2c99131d8c59.mp4
 
     Join Random Room 버튼을 누르면 현재 만들어져 있는 임의의 방에 접속하게 된다.
-  
-    <details>  
-        <summary><h3>랜덤방 입장(PhotonInit)</h></summary>
+<details>  
+    <summary><h3>랜덤방 입장(PhotonInit)</h></summary>
 
 ```C#
      public override void OnConnectedToMaster()
@@ -167,7 +166,7 @@ https://user-images.githubusercontent.com/63942174/158361351-8a318f42-bbbd-47c3-
         yield return ao;
     }
 ```
-    </details>  
+</details>  
     
     
 ## 3.환경설정
@@ -176,7 +175,6 @@ https://user-images.githubusercontent.com/63942174/158361437-9871a9f5-b60e-4c03-
 
     화면의 환경설정버튼을 누르면 숨겨져있던 메뉴가 스크롤되도록 구현하였다.  
     사운드 관련 데이터는 PlayerPrefs에 저장하였다.
-      
 <details>  
     <summary>환경설정버튼 스크롤과 사운드 옵션 로컬 저장(PhotonInit)</summary>
 
@@ -226,10 +224,8 @@ https://user-images.githubusercontent.com/63942174/158361437-9871a9f5-b60e-4c03-
  </details>  
     
     ConfigBox에서 사운드설정을 변경하면 PlayerPreps에 저장되도록 구현하였다.
-    
 <details>  
     <summary>ConfigBox 스크립트(ConfigBox)</summary>
-    
 ``` C#
     public class ConfigBox : MonoBehaviour
 {
@@ -277,7 +273,7 @@ https://user-images.githubusercontent.com/63942174/158361437-9871a9f5-b60e-4c03-
 }
 
 ```
- </details>  
+</details>  
     
 ## 4.팀 이동 및 준비  
 
