@@ -285,7 +285,21 @@ https://user-images.githubusercontent.com/63942174/158361475-0e5b83a3-28b5-4035-
     배틀씬에서 블루팀과 레드팀으로  이동할 수 있고 준비를 할수 있도록 만들었다.
 <details>  
     <summary>팀 이동 관련(GameMgr)</summary>
-```C#
+``` C#
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.UI;
+using Photon.Pun;
+using Photon.Realtime;
+
+public enum GameState
+{
+    GS_Ready = 0,
+    GS_Playing,
+    GS_GameEnd,
+}
+
       private void Awake()
     {
         //PhotonView 컴포넌트 할당
