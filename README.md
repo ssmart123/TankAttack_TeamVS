@@ -178,7 +178,7 @@ https://user-images.githubusercontent.com/63942174/158361437-9871a9f5-b60e-4c03-
 <details>  
     <summary>환경설정버튼 스크롤과 사운드 옵션 로컬 저장(PhotonInit)</summary>
 
-```C#
+``` C#
      private void Update()
     {
         //  메뉴 아이콘 회전 관련
@@ -223,9 +223,11 @@ https://user-images.githubusercontent.com/63942174/158361437-9871a9f5-b60e-4c03-
     
  </details>  
     
+    
     ConfigBox에서 사운드설정을 변경하면 PlayerPreps에 저장되도록 구현하였다.
 <details>  
     <summary>ConfigBox 스크립트(ConfigBox)</summary>
+    
 ``` C#
     public class ConfigBox : MonoBehaviour
 {
@@ -273,7 +275,7 @@ https://user-images.githubusercontent.com/63942174/158361437-9871a9f5-b60e-4c03-
 }
 
 ```
- </details>  
+</details>  
     
     
 ## 4.팀 이동 및 준비  
