@@ -20,6 +20,7 @@ https://user-images.githubusercontent.com/63942174/158361325-c7fa9025-d939-433f-
     <summary>포톤 클라우드 서버 접속과 방생성을 위한 코드(PhotonInit)</summary>
   
 ``` C#
+    
 void Awake()
     {
         //포톤 클라우드 서버 접속 여부 확인
@@ -114,8 +115,10 @@ void Awake()
     }
     
 ```
+    
  </details>
 
+    
 ## 2.랜덤방 입장  
 
 https://user-images.githubusercontent.com/63942174/158361351-8a318f42-bbbd-47c3-8636-2c99131d8c59.mp4
