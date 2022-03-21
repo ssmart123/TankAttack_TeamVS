@@ -766,9 +766,10 @@ public enum GameState
 
 https://user-images.githubusercontent.com/63942174/158361547-473582dc-5ed9-4b3e-a020-986cfd3ce74c.mp4
 
+    모든 팀에 레디가 완료되면 3초뒤 게임이 시작하게 됩니다. 카운트다운이 끝나면 UI화면을 끄고 탱크가 스폰되게 됩니다.
   
 <details>  
-    <summary>게임 </summary>
+    <summary>게임시작(GameMgr) </summary>
 
 ```C#
     bool IsGamePossible()  //게임이 가능한 상태인지? 체크하는 함수
@@ -873,6 +874,7 @@ https://user-images.githubusercontent.com/63942174/158361547-473582dc-5ed9-4b3e-
 
 https://user-images.githubusercontent.com/63942174/158361614-af9bfcd3-866e-4320-8263-bab11f5ab0b9.mp4
 
+    환경설정 스크롤을 누른 뒤 나가기 버튼을 클릭하면 포톤과의 접속이 종료되게 되고 생성된 모든 네트워크 객체를 삭제하게 됩니다.
   
 <details>  
     <summary>게임중 나가기</summary>
@@ -919,6 +921,7 @@ https://user-images.githubusercontent.com/63942174/158361614-af9bfcd3-866e-4320-
 
 https://user-images.githubusercontent.com/63942174/158361758-0b3e8f61-7d3b-408e-a889-6ef53706b9a1.mp4
 
+    좌클릭을 누르면 포탄을 발사하게 됩니다. UI를 클릭하면 포탄이 발사되지 않도록 설정하였습니다.
 
 <details>  
     <summary>적을 향해 공격을 할 시 실행되는 스크립트(FireCannon)</summary>
@@ -1003,6 +1006,7 @@ https://user-images.githubusercontent.com/63942174/158361758-0b3e8f61-7d3b-408e-
     
  </details>  
     
+    총알과 탱크의 트리거가 충돌하면 실행되는 스크립트입니다. 충돌시 데미지를 입게되고 BillboardUI의 탱크체력을 깍게 됩니다.
       
 <details>  
     <summary>탱크가 공격을 받았을 때 스크립트(TankDamage)</summary>
@@ -1494,7 +1498,8 @@ https://user-images.githubusercontent.com/63942174/158361758-0b3e8f61-7d3b-408e-
 
 https://user-images.githubusercontent.com/63942174/158361799-9cb3bf1c-8fa2-49ba-9935-400b23727e87.mp4
 
-      
+  탱크의 이동 및 범위제한, 탱크끼리의 충돌범위를 제한한 스크립트입니다. 좌우버튼을 누르면 탱크가 회전하게 되고 카메라가 탱크의 전방을 향하게 천천히 따라갑니다.
+    
 <details>  
     <summary>탱크 이동 관련 스크립트(TankMove)</summary>
 
@@ -1683,6 +1688,7 @@ https://user-images.githubusercontent.com/63942174/158361799-9cb3bf1c-8fa2-49ba-
     
  </details>  
     
+    탱크 오브젝트의 터렛을  회전시켜주는 스크립트입니다.
       
 <details>  
     <summary>터렛 회전 관련 스크립트(TurretCtrl)</summary>
@@ -1778,6 +1784,7 @@ public class TurretCtrl : MonoBehaviourPunCallbacks, IPunObservable
     
  </details>  
     
+    탱크의 포신이 위아래로 움직이게 하기 위한 스크립트입니다.
     
 <details>  
     <summary>포신 컨트롤 관련 스크립트(CannonCtrl)</summary>
@@ -1894,6 +1901,7 @@ public class CannonCtrl : MonoBehaviourPunCallbacks, IPunObservable
 
 https://user-images.githubusercontent.com/63942174/158361902-0618f85d-ab83-44aa-b93c-ec21983daf28.mp4
 
+    게임 시작 후 30초 뒤에 미니맵 UI를 표시해주는 스크립트입니다.
       
 <details>  
     <summary>미니맵 관련 스크립트(GameMgr)</summary>
@@ -1946,9 +1954,11 @@ https://user-images.githubusercontent.com/63942174/158361902-0618f85d-ab83-44aa-
 
 https://user-images.githubusercontent.com/63942174/158362001-97c7fa5c-9de9-4452-8724-399135141cd5.mp4
 
-  
+  라운드 승리 시 승리 카운트를 하나씩 증가시켜 주고 블루팀과 레드팀의 승수의 합계가 5이상이면 더 높은 승리를 가져간 팀이 승리하게 되도록 구현한 스크립트입니다. 
+    승리 텍스트가 나오고 5초 후에 로비로 되돌아가도록 설정하였습니다.
+    
 <details>  
-    <summary>랜덤방 입장</summary>
+    <summary>승리시 처리 스크립트(GameMgr)</summary>
 
 ```C#
       //한쪽팀이 전멸했는지 체크하고 승리 / 패배 를 감시하고 처리해 주는 함수
