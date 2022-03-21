@@ -11,10 +11,11 @@
 --------------------------
 
 ## 1.방 생성  
+https://user-images.githubusercontent.com/63942174/158361325-c7fa9025-d939-433f-93c3-f8e82386f4a0.mp4
+
+
 ###### 로비화면의 Make Room버튼을 누르면 방을 만들 수 있도록 구현하였다. 만들어진 방은 다른 플레이어들이 볼수 있고  
 ###### 방을 클릭하면 해당 방에 접속할 수 있다.
-
-https://user-images.githubusercontent.com/63942174/158361325-c7fa9025-d939-433f-93c3-f8e82386f4a0.mp4
 
 <details>
     <summary>포톤 클라우드 서버 접속과 방생성을 위한 코드</summary>
