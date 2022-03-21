@@ -288,9 +288,10 @@ https://user-images.githubusercontent.com/63942174/158361475-0e5b83a3-28b5-4035-
 
     배틀씬에서 블루팀과 레드팀으로  이동할 수 있고 준비를 할수 있도록 만들었다.
 <details>  
-    <summary>팀 이동 관련(GameMgr)</summary>
+    <summary>ConfigBox 스크립트(ConfigBox)</summary>
+    
 ``` C#
-using System.Collections;
+    using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
@@ -757,9 +758,9 @@ public enum GameState
     }
     //--------------- Receive Ready
     #endregion  //--------------- Ready 상태 동기화 처리
+
 ```
-    
- </details>  
+</details>  
     
 ## 5.게임시작  
 
