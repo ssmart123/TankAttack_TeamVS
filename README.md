@@ -229,6 +229,8 @@ https://user-images.githubusercontent.com/63942174/158361437-9871a9f5-b60e-4c03-
     
  </details>  
     
+    ConfigBox에서 사운드설정을 변경하면 PlayerPreps에 저장되도록 구현하였다.
+    
 <details>  
     <summary>ConfigBox 스크립트(ConfigBox)</summary>
     
@@ -280,6 +282,7 @@ https://user-images.githubusercontent.com/63942174/158361437-9871a9f5-b60e-4c03-
 
 ```
  </details>  
+    
 ## 4.팀 이동 및 준비  
 
 https://user-images.githubusercontent.com/63942174/158361475-0e5b83a3-28b5-4035-bcfd-41b239ba9bec.mp4
