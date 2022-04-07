@@ -265,13 +265,13 @@
       <HintPath>C:/Program Files (x86)/Microsoft Visual Studio Tools for Unity/16.0/Editor/SyntaxTree.VisualStudio.Unity.Bridge.dll</HintPath>
     </Reference>
     <Reference Include="Photon3Unity3D">
-      <HintPath>C:/Users/Shin/Desktop/SBS게임아카데미 평가 내역/포트폴리오/TankAttack_TeamVs/Assets/Photon/PhotonLibs/netstandard2.0/Photon3Unity3D.dll</HintPath>
+      <HintPath>C:/Users/Shin/Desktop/GitHub/TankAttack_TeamVS/TankAttack_TeamVs/Assets/Photon/PhotonLibs/netstandard2.0/Photon3Unity3D.dll</HintPath>
     </Reference>
     <Reference Include="websocket-sharp">
-      <HintPath>C:/Users/Shin/Desktop/SBS게임아카데미 평가 내역/포트폴리오/TankAttack_TeamVs/Assets/Photon/PhotonLibs/WebSocket/websocket-sharp.dll</HintPath>
+      <HintPath>C:/Users/Shin/Desktop/GitHub/TankAttack_TeamVS/TankAttack_TeamVs/Assets/Photon/PhotonLibs/WebSocket/websocket-sharp.dll</HintPath>
     </Reference>
     <Reference Include="nunit.framework">
-      <HintPath>C:/Users/Shin/Desktop/SBS게임아카데미 평가 내역/포트폴리오/TankAttack_TeamVs/Library/PackageCache/com.unity.ext.nunit@1.0.0/net35/unity-custom/nunit.framework.dll</HintPath>
+      <HintPath>C:/Users/Shin/Desktop/GitHub/TankAttack_TeamVS/TankAttack_TeamVs/Library/PackageCache/com.unity.ext.nunit@1.0.0/net35/unity-custom/nunit.framework.dll</HintPath>
     </Reference>
     <Reference Include="mscorlib">
       <HintPath>C:/Program Files/Unity/Hub/Editor/2019.4.1f1/Editor/Data/MonoBleedingEdge/lib/mono/4.7.1-api/mscorlib.dll</HintPath>
@@ -628,16 +628,16 @@
       <HintPath>C:/Program Files/Unity/Hub/Editor/2019.4.1f1/Editor/Data/MonoBleedingEdge/lib/mono/unityscript/Boo.Lang.dll</HintPath>
     </Reference>
     <Reference Include="UnityEditor.UI">
-      <HintPath>C:/Users/Shin/Desktop/SBS게임아카데미 평가 내역/포트폴리오/TankAttack_TeamVs/Library/ScriptAssemblies/UnityEditor.UI.dll</HintPath>
+      <HintPath>C:/Users/Shin/Desktop/GitHub/TankAttack_TeamVS/TankAttack_TeamVs/Library/ScriptAssemblies/UnityEditor.UI.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.UI">
-      <HintPath>C:/Users/Shin/Desktop/SBS게임아카데미 평가 내역/포트폴리오/TankAttack_TeamVs/Library/ScriptAssemblies/UnityEngine.UI.dll</HintPath>
+      <HintPath>C:/Users/Shin/Desktop/GitHub/TankAttack_TeamVS/TankAttack_TeamVs/Library/ScriptAssemblies/UnityEngine.UI.dll</HintPath>
     </Reference>
     <Reference Include="UnityEditor.TestRunner">
-      <HintPath>C:/Users/Shin/Desktop/SBS게임아카데미 평가 내역/포트폴리오/TankAttack_TeamVs/Library/ScriptAssemblies/UnityEditor.TestRunner.dll</HintPath>
+      <HintPath>C:/Users/Shin/Desktop/GitHub/TankAttack_TeamVS/TankAttack_TeamVs/Library/ScriptAssemblies/UnityEditor.TestRunner.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.TestRunner">
-      <HintPath>C:/Users/Shin/Desktop/SBS게임아카데미 평가 내역/포트폴리오/TankAttack_TeamVs/Library/ScriptAssemblies/UnityEngine.TestRunner.dll</HintPath>
+      <HintPath>C:/Users/Shin/Desktop/GitHub/TankAttack_TeamVS/TankAttack_TeamVs/Library/ScriptAssemblies/UnityEngine.TestRunner.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
